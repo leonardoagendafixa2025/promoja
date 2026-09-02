@@ -34,9 +34,11 @@ import {
   Edit,
   X,
   Send,
-  PlusCircle
+  PlusCircle,
+  Copy,
+  LayoutTemplate
 } from 'lucide-react';
-import { Tenant, User, SubscriptionPlan, Transaction, Coupon, SupportTicket, PlatformAnnouncement, FeatureFlag, AuditLog, SystemHealth } from '../../types';
+import { Tenant, User, SubscriptionPlan, Transaction, Coupon, SupportTicket, PlatformAnnouncement, FeatureFlag, AuditLog, SystemHealth, Template } from '../../types';
 import { SuperAdminSubTab } from '../Layout/Sidebar';
 
 interface SuperAdminViewProps {
@@ -58,6 +60,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -73,6 +76,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
   const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
   const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
   const [isNewCouponModalOpen, setIsNewCouponModalOpen] = useState(false);
+  const [isNewTemplateModalOpen, setIsNewTemplateModalOpen] = useState(false);
   const [isNewAnnouncementModalOpen, setIsNewAnnouncementModalOpen] = useState(false);
   const [replyingTicket, setReplyingTicket] = useState<SupportTicket | null>(null);
 
@@ -117,6 +121,15 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
     maxUses: 100,
   });
 
+  const [newTemplateForm, setNewTemplateForm] = useState({
+    name: '',
+    category: 'SUPERMERCADO' as any,
+    format: 'STORIES_9_16' as any,
+    bgGradient: 'linear-gradient(180deg, #be123c 0%, #881337 100%)',
+    hasSpotlight: true,
+    isGlobal: true,
+  });
+
   const [newAnnouncementForm, setNewAnnouncementForm] = useState({
     title: '',
     message: '',
@@ -140,6 +153,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         plansRes,
         txsRes,
         couponsRes,
+        templatesRes,
         ticketsRes,
         announcementsRes,
         logsRes,
@@ -152,6 +166,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         fetch('/api/plans'),
         fetch('/api/admin/transactions'),
         fetch('/api/admin/coupons'),
+        fetch('/api/templates'),
         fetch('/api/admin/tickets'),
         fetch('/api/admin/announcements'),
         fetch('/api/admin/audit-logs'),
@@ -169,6 +184,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
       if (plansRes.ok) setPlans(await plansRes.json());
       if (txsRes.ok) setTransactions(await txsRes.json());
       if (couponsRes.ok) setCoupons(await couponsRes.json());
+      if (templatesRes.ok) setTemplates(await templatesRes.json());
       if (ticketsRes.ok) setTickets(await ticketsRes.json());
       if (announcementsRes.ok) setAnnouncements(await announcementsRes.json());
       if (logsRes.ok) setAuditLogs(await logsRes.json());
@@ -328,7 +344,84 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
     }
   };
 
-  // 6. Responder Ticket de Suporte
+  // 6. Criar Template Global
+  const handleCreateTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newTemplateForm,
+          thumbnailUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
+          elements: [
+            {
+              id: `el_${Date.now()}_1`,
+              type: 'ribbon_banner',
+              label: 'Banner Oferta',
+              posX: 140,
+              posY: 120,
+              width: 800,
+              height: 110,
+              bgColor: '#facc15',
+              fontColor: '#0f172a',
+              fontSize: 52,
+              content: 'SUPER OFERTA',
+              zIndex: 1,
+            },
+            {
+              id: `el_${Date.now()}_2`,
+              type: 'image',
+              label: 'Foto do Produto',
+              posX: 140,
+              posY: 320,
+              width: 800,
+              height: 800,
+              zIndex: 2,
+            },
+            {
+              id: `el_${Date.now()}_3`,
+              type: 'text',
+              label: 'Nome do Produto',
+              posX: 90,
+              posY: 1180,
+              width: 900,
+              height: 180,
+              dynamicField: '{{nome_produto}}',
+              fontSize: 64,
+              fontColor: '#ffffff',
+              fontStyle: 'black',
+              alignment: 'center',
+              zIndex: 3,
+            },
+            {
+              id: `el_${Date.now()}_4`,
+              type: 'price_promotional',
+              label: 'Preço Promocional',
+              posX: 210,
+              posY: 1490,
+              width: 660,
+              height: 145,
+              fontSize: 115,
+              fontColor: '#ffffff',
+              alignment: 'center',
+              zIndex: 5,
+            }
+          ]
+        })
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        setTemplates(prev => [...prev, created]);
+        setIsNewTemplateModalOpen(false);
+      }
+    } catch (err) {
+      alert('Erro ao criar template global');
+    }
+  };
+
+  // 7. Responder Ticket de Suporte
   const handleReplyTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyingTicket || !ticketReplyText.trim()) return;
@@ -364,7 +457,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
     }
   };
 
-  // 7. Criar Aviso da Plataforma
+  // 8. Criar Aviso da Plataforma
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -753,13 +846,50 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         </div>
       )}
 
-      {/* 7. BIBLIOTECA TEMPLATES */}
+      {/* 7. BIBLIOTECA TEMPLATES GLOBAIS DA PLATAFORMA */}
       {activeTab === 'templates' && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-          <h3 className="text-base font-black text-white font-display mb-4">Templates Globais da Plataforma</h3>
-          <p className="text-xs text-slate-400">
-            Administre os modelos visuais e temas gráficos compartilhados com todas as empresas clientes.
-          </p>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black text-white font-display">Biblioteca de Templates Globais</h3>
+              <p className="text-xs text-slate-400">Modelos visuais e temas gráficos oficiais da plataforma fornecidos aos lojistas.</p>
+            </div>
+
+            <button
+              onClick={() => setIsNewTemplateModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 transition shadow-lg shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Criar Novo Template Global</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {templates.map((tpl) => (
+              <div key={tpl.id} className="glass-card p-5 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden group">
+                <div 
+                  className="w-full h-44 rounded-2xl relative flex items-center justify-center p-4 shadow-inner"
+                  style={{ background: tpl.bgGradient || tpl.bgColor || '#1e293b' }}
+                >
+                  <div className="text-center text-white space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-950/60 border border-white/20">
+                      {tpl.format}
+                    </span>
+                    <h4 className="text-sm font-black font-display text-white">{tpl.name}</h4>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-300">
+                  <span className="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                    {tpl.category}
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-400">
+                    {tpl.elements?.length || 0} Elementos
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -898,6 +1028,52 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* MODAL: NOVO TEMPLATE GLOBAL */}
+      {isNewTemplateModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateTemplate} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Criar Novo Template Global</h3>
+              <button type="button" onClick={() => setIsNewTemplateModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Nome do Template</label>
+                <input required type="text" value={newTemplateForm.name} onChange={e => setNewTemplateForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Ex: Varejo Impacto Neon Red" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Categoria</label>
+                  <select value={newTemplateForm.category} onChange={e => setNewTemplateForm(p => ({ ...p, category: e.target.value as any }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                    <option value="SUPERMERCADO">SUPERMERCADO</option>
+                    <option value="HORTIFRUTI">HORTIFRUTI</option>
+                    <option value="ACOUQUE">AÇOUGUE</option>
+                    <option value="FARMACIA">FARMÁCIA</option>
+                    <option value="PADARIA">PADARIA</option>
+                    <option value="BEBIDAS">BEBIDAS</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Formato Mídia</label>
+                  <select value={newTemplateForm.format} onChange={e => setNewTemplateForm(p => ({ ...p, format: e.target.value as any }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                    <option value="STORIES_9_16">STORIES (9:16)</option>
+                    <option value="FEED_1_1">FEED (1:1)</option>
+                    <option value="TV_16_9">TV DA LOJA (16:9)</option>
+                    <option value="FLYER_A4">FOLHETO PDF A4</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewTemplateModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Publicar Template Global</button>
+            </div>
+          </form>
         </div>
       )}
 
