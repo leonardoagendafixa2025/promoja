@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#be123c"/>
+      <stop offset="50%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <g filter="url(#glow)">
+    <!-- Sparkles Icon Path -->
+    <path d="M256 96 L288 224 L416 256 L288 288 L256 416 L224 288 L96 256 L224 224 Z" fill="#ffffff" />
+    <path d="M384 96 L396 144 L444 156 L396 168 L384 216 L372 168 L324 156 L372 144 Z" fill="#facc15" />
+    <path d="M128 352 L136 384 L168 392 L136 400 L128 432 L120 400 L88 392 L120 384 Z" fill="#ffffff" />
+  </g>
+</svg>
