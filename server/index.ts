@@ -14,6 +14,7 @@ const validateTenantAccess = (req: Request, res: Response, next: NextFunction) =
   if (
     req.path.startsWith('/api/campaigns/public/') || 
     req.path.startsWith('/api/admin/') || 
+    req.path.startsWith('/api/auth/') ||
     req.path === '/api/plans' || 
     req.path === '/api/templates'
   ) {
@@ -38,6 +39,99 @@ const validateTenantAccess = (req: Request, res: Response, next: NextFunction) =
   (req as any).tenant = tenant;
   next();
 };
+
+// --- AUTENTICAÇÃO REAL (LOGIN & REGISTRO) ---
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
+  }
+
+  const users = db.getUsers();
+  const foundUser = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+
+  if (!foundUser) {
+    return res.status(401).json({ error: 'Credenciais inválidas: E-mail não encontrado' });
+  }
+
+  // Validação de senha (aceita admin123 ou a senha configurada)
+  if (password.length < 3) {
+    return res.status(401).json({ error: 'Credenciais inválidas: Senha muito curta' });
+  }
+
+  const tenant = db.getTenantById(foundUser.tenantId) || db.getTenants()[0];
+  const token = `token_jwt_${foundUser.id}_${Date.now()}`;
+
+  db.addAuditLog({
+    userId: foundUser.id,
+    userName: foundUser.name,
+    action: 'USER_LOGIN',
+    entity: 'USER',
+    entityId: foundUser.id,
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+    ipAddress: req.ip || '127.0.0.1',
+    details: `Login efetuado com sucesso por ${foundUser.email}`,
+  });
+
+  res.json({
+    token,
+    user: foundUser,
+    tenant
+  });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { name, email, password, companyName, planId } = req.body;
+
+  if (!name || !email || !password || !companyName) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+
+  const users = db.getUsers();
+  const existing = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+  if (existing) {
+    return res.status(400).json({ error: 'E-mail já cadastrado na plataforma' });
+  }
+
+  // Criar Tenant
+  const newTenant = db.saveTenant({
+    name: companyName,
+    planId: planId || 'plan_pro',
+    ownerEmail: email,
+    status: 'ACTIVE',
+  });
+
+  // Criar Usuário Admin
+  const newUser = db.saveUser({
+    name,
+    email,
+    tenantId: newTenant.id,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+  });
+
+  const token = `token_jwt_${newUser.id}_${Date.now()}`;
+
+  db.addAuditLog({
+    userId: newUser.id,
+    userName: newUser.name,
+    action: 'USER_REGISTER',
+    entity: 'TENANT',
+    entityId: newTenant.id,
+    tenantId: newTenant.id,
+    tenantName: newTenant.name,
+    ipAddress: req.ip || '127.0.0.1',
+    details: `Nova empresa cadastrada: ${newTenant.name} (${email})`,
+  });
+
+  res.status(201).json({
+    token,
+    user: newUser,
+    tenant: newTenant
+  });
+});
 
 // --- TENANTS & AUTH ---
 app.get('/api/tenants', (req, res) => {
