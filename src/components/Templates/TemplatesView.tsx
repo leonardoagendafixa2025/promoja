@@ -14,7 +14,17 @@ export const TemplatesView: React.FC = () => {
   useEffect(() => {
     fetch('/api/templates')
       .then(res => res.json())
-      .then(data => setTemplates(data));
+      .then(data => {
+        const localSaved = JSON.parse(localStorage.getItem('promoja_custom_templates') || '[]');
+        const mergedMap = new Map<string, Template>();
+        (data || []).forEach((t: Template) => mergedMap.set(t.id, t));
+        localSaved.forEach((t: Template) => mergedMap.set(t.id, t));
+        setTemplates(Array.from(mergedMap.values()));
+      })
+      .catch(() => {
+        const localSaved = JSON.parse(localStorage.getItem('promoja_custom_templates') || '[]');
+        setTemplates(localSaved);
+      });
   }, []);
 
   const categories: { id: RetailCategory | 'ALL'; label: string }[] = [

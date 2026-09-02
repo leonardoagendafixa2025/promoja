@@ -184,7 +184,14 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
       if (plansRes.ok) setPlans(await plansRes.json());
       if (txsRes.ok) setTransactions(await txsRes.json());
       if (couponsRes.ok) setCoupons(await couponsRes.json());
-      if (templatesRes.ok) setTemplates(await templatesRes.json());
+      if (templatesRes.ok) {
+        const apiTemplates: Template[] = await templatesRes.json();
+        const localSaved = JSON.parse(localStorage.getItem('promoja_custom_templates') || '[]');
+        const mergedMap = new Map<string, Template>();
+        apiTemplates.forEach(t => mergedMap.set(t.id, t));
+        localSaved.forEach((t: Template) => mergedMap.set(t.id, t));
+        setTemplates(Array.from(mergedMap.values()));
+      }
       if (ticketsRes.ok) setTickets(await ticketsRes.json());
       if (announcementsRes.ok) setAnnouncements(await announcementsRes.json());
       if (logsRes.ok) setAuditLogs(await logsRes.json());
@@ -404,7 +411,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         if (data) created = data;
       }
 
-      setTemplates(prev => [...prev, created as any]);
+      setTemplates(prev => {
+        const updated = [...prev, created as any];
+        try {
+          const customList = updated.filter(t => t.id && t.id.startsWith('tpl_'));
+          localStorage.setItem('promoja_custom_templates', JSON.stringify(customList));
+        } catch (e) {
+          console.error('Erro ao salvar template no localStorage:', e);
+        }
+        return updated;
+      });
       setIsNewTemplateModalOpen(false);
       setNewTemplateForm({
         name: '',
