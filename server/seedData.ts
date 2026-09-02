@@ -98,8 +98,8 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user_superadmin',
     tenantId: 'tenant_supermercado_modelo',
-    name: 'Carlos Mendes (Super Admin)',
-    email: 'carlos@promoja.com.br',
+    name: 'Super Admin (To Yesterday Agência)',
+    email: 'toyesterdayagencia@gmail.com',
     role: 'SUPER_ADMIN',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   },
