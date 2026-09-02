@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Store, UserCheck, Check, Sparkles, X, Lock, ArrowRight, Mail, Key, UserPlus, Eye, EyeOff, Building } from 'lucide-react';
+import { Shield, Store, Sparkles, X, Lock, ArrowRight, Mail, Key, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -8,9 +8,9 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAdmin }) => {
-  const { allUsers, allTenants, currentUser, currentTenant, switchUser, login, register } = useAuth();
+  const { login, register } = useAuth();
 
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'QUICK'>('LOGIN');
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
   // LOGIN FORM STATE
   const [loginEmail, setLoginEmail] = useState('');
@@ -54,15 +54,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
     }
   };
 
-  const handleQuickSelect = (userId: string) => {
-    switchUser(userId);
-    const u = allUsers.find(user => user.id === userId);
-    if (u?.role === 'SUPER_ADMIN' && onSelectSuperAdmin) {
-      onSelectSuperAdmin();
-    }
-    onClose();
-  };
-
   const autofillLogin = (email: string) => {
     setLoginEmail(email);
     setLoginPassword('admin123');
@@ -77,14 +68,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
             <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider flex items-center gap-1">
               <Lock className="w-3.5 h-3.5" /> Autenticação Segura PROMOJÁ
             </span>
-            <h3 className="text-xl font-black text-white font-display">Acesse sua Conta ou Registre sua Empresa</h3>
+            <h3 className="text-xl font-black text-white font-display">
+              {authMode === 'LOGIN' ? 'Entrar na sua Conta' : 'Criar Nova Conta (Registro SaaS)'}
+            </h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-2">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* ABAS DE AUTENTICAÇÃO */}
+        {/* ABAS DE AUTENTICAÇÃO REAL */}
         <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-2xl border border-slate-800">
           <button
             onClick={() => setAuthMode('LOGIN')}
@@ -93,7 +86,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
             }`}
           >
             <Key className="w-4 h-4" />
-            Entrar com E-mail
+            Entrar com E-mail e Senha
           </button>
           <button
             onClick={() => setAuthMode('REGISTER')}
@@ -102,25 +95,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
             }`}
           >
             <UserPlus className="w-4 h-4" />
-            Criar Nova Conta
-          </button>
-          <button
-            onClick={() => setAuthMode('QUICK')}
-            className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-              authMode === 'QUICK' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            Atalho Demo
+            Criar Nova Empresa
           </button>
         </div>
 
         {/* MODO 1: LOGIN COM E-MAIL E SENHA */}
         {authMode === 'LOGIN' && (
           <form onSubmit={handleLoginFormSubmit} className="space-y-4">
-            {/* CHIPS DE PREENCHIMENTO RÁPIDO PARA TESTE */}
+            {/* CHIPS DE PREENCHIMENTO RÁPIDO PARA TESTE DE PRODUÇÃO */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Contas de Teste (Clique para preencher):</span>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Preenchimento Rápido para Testes:</span>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -267,56 +251,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-        )}
-
-        {/* MODO 3: ATALHOS DEMO RÁPIDOS */}
-        {authMode === 'QUICK' && (
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                const superAdminUser = allUsers.find(u => u.role === 'SUPER_ADMIN') || allUsers[0];
-                handleQuickSelect(superAdminUser.id);
-              }}
-              className="w-full p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-rose-600 to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-between transition transform active:scale-95"
-            >
-              <div className="flex items-center space-x-3">
-                <Shield className="w-6 h-6 text-amber-200" />
-                <div className="text-left">
-                  <div className="text-sm font-black font-display">⚡ ENTRAR COMO SUPER ADMIN</div>
-                  <div className="text-[11px] font-normal text-purple-100">Carlos Mendes (carlos@promoja.com.br)</div>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-white" />
-            </button>
-
-            <div className="space-y-2">
-              {allUsers.map((user) => {
-                const tenant = allTenants.find(t => t.id === user.tenantId);
-                const isCurrent = currentUser?.id === user.id;
-
-                return (
-                  <button
-                    key={user.id}
-                    onClick={() => handleQuickSelect(user.id)}
-                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between transition ${
-                      isCurrent ? 'bg-purple-950/40 border-purple-500' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center font-bold text-white text-xs">
-                        {user.name.charAt(0)}
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-white">{user.name}</span>
-                        <span className="text-[10px] text-slate-400 block">{user.email} • {tenant?.name}</span>
-                      </div>
-                    </div>
-                    {isCurrent && <Check className="w-4 h-4 text-emerald-400" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Store, UserCheck, Shield, Sparkles, KeyRound } from 'lucide-react';
+import { Store, UserCheck, Shield, Sparkles, LogOut, User, KeyRound } from 'lucide-react';
 import { LoginModal } from '../Auth/LoginModal';
 
 interface NavbarProps {
@@ -8,8 +8,13 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
-  const { currentTenant, currentUser, allTenants, switchTenant } = useAuth();
+  const { currentTenant, currentUser, allTenants, switchTenant, logout } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setIsLoginModalOpen(true);
+  };
 
   return (
     <header className="h-16 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-lg">
@@ -30,23 +35,42 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
 
       {/* Control Buttons & Tenant Selectors */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* BOTÃO DIRETO SUPER ADMIN NO TOPO DO SITE */}
-        <button
-          onClick={onOpenSuperAdmin}
-          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-black flex items-center gap-1.5 transition shadow-lg shadow-purple-950/50"
-        >
-          <Shield className="w-4 h-4 text-purple-200" />
-          <span>🛡️ Super Admin Control Center</span>
-        </button>
+        {/* BOTÃO DIRETO SUPER ADMIN (APENAS SE O USUÁRIO FOR SUPER ADMIN) */}
+        {currentUser?.role === 'SUPER_ADMIN' && (
+          <button
+            onClick={onOpenSuperAdmin}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-black flex items-center gap-1.5 transition shadow-lg shadow-purple-950/50"
+          >
+            <Shield className="w-4 h-4 text-purple-200" />
+            <span>🛡️ Super Admin Control Center</span>
+          </button>
+        )}
 
-        {/* BOTÃO DE PERFIL */}
-        <button
-          onClick={() => setIsLoginModalOpen(true)}
-          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold flex items-center gap-1.5 transition"
-        >
-          <KeyRound className="w-4 h-4 text-purple-400" />
-          <span className="hidden md:inline">Alternar Perfil</span>
-        </button>
+        {/* INFORMAÇÕES DO USUÁRIO LOGADO */}
+        {currentUser ? (
+          <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
+            <User className="w-4 h-4 text-purple-400" />
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Usuário Logado</span>
+              <span className="text-xs font-bold text-white truncate max-w-[130px]">{currentUser.name}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Sair da Conta"
+              className="ml-1 p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsLoginModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>Entrar com E-mail</span>
+          </button>
+        )}
 
         {/* SELECTOR DE EMPRESA */}
         <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
