@@ -30,10 +30,13 @@ import {
   Tag,
   Lock,
   MessageSquare,
-  Radio
+  Radio,
+  Edit,
+  X,
+  Send,
+  PlusCircle
 } from 'lucide-react';
 import { Tenant, User, SubscriptionPlan, Transaction, Coupon, SupportTicket, PlatformAnnouncement, FeatureFlag, AuditLog, SystemHealth } from '../../types';
-
 import { SuperAdminSubTab } from '../Layout/Sidebar';
 
 interface SuperAdminViewProps {
@@ -63,8 +66,66 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('ALL');
+
+  // MODAIS E FORMULÁRIOS INTERATIVOS
+  const [isNewTenantModalOpen, setIsNewTenantModalOpen] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
+  const [isNewPlanModalOpen, setIsNewPlanModalOpen] = useState(false);
+  const [isNewCouponModalOpen, setIsNewCouponModalOpen] = useState(false);
+  const [isNewAnnouncementModalOpen, setIsNewAnnouncementModalOpen] = useState(false);
+  const [replyingTicket, setReplyingTicket] = useState<SupportTicket | null>(null);
+
   const [impersonateReasonModal, setImpersonateReasonModal] = useState<{ isOpen: boolean; tenantId: string; tenantName: string } | null>(null);
   const [reasonInput, setReasonInput] = useState('Suporte técnico aos produtos e artes');
+
+  // FORM STATES
+  const [newTenantForm, setNewTenantForm] = useState({
+    name: '',
+    slug: '',
+    planId: 'plan_pro',
+    ownerEmail: '',
+    ownerPhone: '',
+    primaryColor: '#e11d48',
+  });
+
+  const [newUserForm, setNewUserForm] = useState({
+    name: '',
+    email: '',
+    role: 'ADMIN',
+    tenantId: '',
+  });
+
+  const [newPlanForm, setNewPlanForm] = useState({
+    name: '',
+    priceMonthly: 149.90,
+    priceYearly: 1490.00,
+    artsLimitMonth: 500,
+    hasWatermark: false,
+    hasBulkGenerator: true,
+    hasPdfFlyer: true,
+    hasOnlineCatalog: true,
+    hasTvMode: true,
+    hasMultiStore: false,
+  });
+
+  const [newCouponForm, setNewCouponForm] = useState({
+    code: '',
+    discountType: 'PERCENTAGE',
+    discountValue: 20,
+    validUntil: '2026-12-31',
+    maxUses: 100,
+  });
+
+  const [newAnnouncementForm, setNewAnnouncementForm] = useState({
+    title: '',
+    message: '',
+    type: 'INFO',
+    priority: 'NORMAL',
+    targetAudience: 'ALL',
+  });
+
+  const [ticketReplyText, setTicketReplyText] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -99,7 +160,11 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
       ]);
 
       if (metricsRes.ok) setMetricsData(await metricsRes.json());
-      if (tenantsRes.ok) setTenants(await tenantsRes.json());
+      if (tenantsRes.ok) {
+        const loadedTenants: Tenant[] = await tenantsRes.json();
+        setTenants(loadedTenants);
+        if (loadedTenants.length > 0) setNewUserForm(prev => ({ ...prev, tenantId: loadedTenants[0].id }));
+      }
       if (usersRes.ok) setUsers(await usersRes.json());
       if (plansRes.ok) setPlans(await plansRes.json());
       if (txsRes.ok) setTransactions(await txsRes.json());
@@ -119,6 +184,204 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  // --- HANDLERS DE AÇÕES DE PRODUÇÃO ---
+
+  // 1. Criar Empresa (Tenant)
+  const handleCreateTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/tenants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newTenantForm,
+          brandKit: {
+            primaryColor: newTenantForm.primaryColor,
+            secondaryColor: '#facc15',
+            accentColor: '#16a34a',
+            fontFamily: 'Outfit',
+            phone: newTenantForm.ownerPhone,
+            instagram: `@${newTenantForm.slug}`,
+            address: 'Endereço da Loja',
+            slogan: 'As melhores ofertas da cidade!',
+            customFooter: 'Ofertas válidas hoje.',
+          }
+        })
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setTenants(prev => [...prev, created]);
+        setIsNewTenantModalOpen(false);
+        setNewTenantForm({ name: '', slug: '', planId: 'plan_pro', ownerEmail: '', ownerPhone: '', primaryColor: '#e11d48' });
+        fetchAdminData();
+      }
+    } catch (err) {
+      alert('Erro ao cadastrar empresa');
+    }
+  };
+
+  // 2. Editar / Alterar Status de Empresa
+  const handleSaveTenantEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTenant) return;
+    try {
+      const res = await fetch(`/api/tenants/${editingTenant.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingTenant)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setTenants(prev => prev.map(t => t.id === updated.id ? updated : t));
+        setEditingTenant(null);
+      }
+    } catch (err) {
+      alert('Erro ao atualizar empresa');
+    }
+  };
+
+  const handleToggleTenantStatus = async (tenant: Tenant) => {
+    const newStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      const res = await fetch(`/api/tenants/${tenant.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setTenants(prev => prev.map(t => t.id === updated.id ? updated : t));
+      }
+    } catch (err) {
+      alert('Erro ao alterar status da empresa');
+    }
+  };
+
+  // 3. Criar Usuário
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUserForm)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setUsers(prev => [...prev, created]);
+        setIsNewUserModalOpen(false);
+        setNewUserForm({ name: '', email: '', role: 'ADMIN', tenantId: tenants[0]?.id || '' });
+      }
+    } catch (err) {
+      alert('Erro ao cadastrar usuário');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja remover este usuário?')) return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+      }
+    } catch (err) {
+      alert('Erro ao remover usuário');
+    }
+  };
+
+  // 4. Criar Plano
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPlanForm)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setPlans(prev => [...prev, created]);
+        setIsNewPlanModalOpen(false);
+      }
+    } catch (err) {
+      alert('Erro ao criar plano');
+    }
+  };
+
+  // 5. Criar Cupom
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCouponForm)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setCoupons(prev => [...prev, created]);
+        setIsNewCouponModalOpen(false);
+      }
+    } catch (err) {
+      alert('Erro ao criar cupom');
+    }
+  };
+
+  // 6. Responder Ticket de Suporte
+  const handleReplyTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyingTicket || !ticketReplyText.trim()) return;
+    try {
+      const updatedMessages = [
+        ...replyingTicket.messages,
+        {
+          senderName: currentUser?.name || 'Carlos Mendes (Suporte)',
+          senderRole: 'SUPPORT' as const,
+          content: ticketReplyText.trim(),
+          createdAt: new Date().toISOString(),
+        }
+      ];
+
+      const res = await fetch('/api/admin/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...replyingTicket,
+          status: 'RESOLVED',
+          messages: updatedMessages
+        })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
+        setReplyingTicket(null);
+        setTicketReplyText('');
+      }
+    } catch (err) {
+      alert('Erro ao enviar resposta do ticket');
+    }
+  };
+
+  // 7. Criar Aviso da Plataforma
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAnnouncementForm)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setAnnouncements(prev => [...prev, created]);
+        setIsNewAnnouncementModalOpen(false);
+      }
+    } catch (err) {
+      alert('Erro ao publicar aviso');
+    }
+  };
 
   const handleStartImpersonation = async () => {
     if (!impersonateReasonModal) return;
@@ -176,8 +439,6 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
           <span>Atualizar Dados</span>
         </button>
       </div>
-
-
 
       {/* 1. DASHBOARD EXECUTIVO */}
       {activeTab === 'dashboard' && (
@@ -266,7 +527,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <select
                 value={selectedTenantFilter}
                 onChange={(e) => setSelectedTenantFilter(e.target.value)}
@@ -277,6 +538,14 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
                 <option value="SUSPENDED">Suspensos</option>
                 <option value="TRIAL">Em Teste</option>
               </select>
+
+              <button
+                onClick={() => setIsNewTenantModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+              >
+                <Plus className="w-4 h-4" />
+                Nova Empresa
+              </button>
             </div>
           </div>
 
@@ -304,18 +573,29 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase ${
-                        t.status === 'ACTIVE'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}>
+                      <button
+                        onClick={() => handleToggleTenantStatus(t)}
+                        className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition ${
+                          t.status === 'ACTIVE'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-rose-500/30 hover:text-rose-300'
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-emerald-500/30 hover:text-emerald-300'
+                        }`}
+                      >
                         {t.status}
-                      </span>
+                      </button>
                     </td>
                     <td className="p-4 text-slate-400">
                       {new Date(t.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right space-x-2">
+                      <button
+                        onClick={() => setEditingTenant(t)}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold inline-flex items-center gap-1 transition"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        Editar
+                      </button>
+
                       <button
                         onClick={() => setImpersonateReasonModal({ isOpen: true, tenantId: t.id, tenantName: t.name })}
                         className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-black inline-flex items-center gap-1.5 transition"
@@ -334,9 +614,16 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
 
       {/* 3. USUÁRIOS E PERMISSÕES (RBAC) */}
       {activeTab === 'users' && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800 space-y-4">
           <div className="p-5 border-b border-slate-800 flex justify-between items-center">
             <h3 className="text-base font-black text-white font-display">Usuários Globais e Permissões (RBAC)</h3>
+            <button
+              onClick={() => setIsNewUserModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Usuário
+            </button>
           </div>
 
           <table className="w-full text-left text-xs text-slate-300">
@@ -345,7 +632,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
                 <th className="p-4">Nome do Usuário</th>
                 <th className="p-4">E-mail</th>
                 <th className="p-4">Cargo / Role</th>
-                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -354,10 +641,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
                   <td className="p-4 font-bold text-white">{u.name}</td>
                   <td className="p-4 text-slate-300">{u.email}</td>
                   <td className="p-4 font-bold text-purple-400">{u.role}</td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
-                      ATIVO
-                    </span>
+                  <td className="p-4 text-right">
+                    <button
+                      onClick={() => handleDeleteUser(u.id)}
+                      className="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -368,22 +658,34 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
 
       {/* 4. PLANOS E ASSINATURAS */}
       {activeTab === 'plans' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((p) => (
-            <div key={p.id} className="glass-card p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden">
-              <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">PLANO SAAS</span>
-              <h3 className="text-2xl font-black text-white font-display">{p.name}</h3>
-              <div className="text-3xl font-black text-emerald-400">
-                R$ {p.priceMonthly.toFixed(2)} <span className="text-xs text-slate-400 font-normal">/mês</span>
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsNewPlanModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Criar Novo Plano
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((p) => (
+              <div key={p.id} className="glass-card p-6 rounded-3xl border border-slate-800 space-y-4 relative overflow-hidden">
+                <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">PLANO SAAS</span>
+                <h3 className="text-2xl font-black text-white font-display">{p.name}</h3>
+                <div className="text-3xl font-black text-emerald-400">
+                  R$ {p.priceMonthly.toFixed(2)} <span className="text-xs text-slate-400 font-normal">/mês</span>
+                </div>
+                <ul className="text-xs text-slate-300 space-y-2 pt-2 border-t border-slate-800">
+                  <li>• Limite Artes: <strong>{p.artsLimitMonth} artes/mês</strong></li>
+                  <li>• Encartes PDF A4: {p.hasPdfFlyer ? '✅ Sim' : '❌ Não'}</li>
+                  <li>• Gerador em Lote: {p.hasBulkGenerator ? '✅ Sim' : '❌ Não'}</li>
+                  <li>• Modo TV 4K: {p.hasTvMode ? '✅ Sim' : '❌ Não'}</li>
+                </ul>
               </div>
-              <ul className="text-xs text-slate-300 space-y-2 pt-2 border-t border-slate-800">
-                <li>• Limite Artes: <strong>{p.artsLimitMonth} artes/mês</strong></li>
-                <li>• Encartes PDF A4: {p.hasPdfFlyer ? '✅ Sim' : '❌ Não'}</li>
-                <li>• Gerador em Lote: {p.hasBulkGenerator ? '✅ Sim' : '❌ Não'}</li>
-                <li>• Modo TV 4K: {p.hasTvMode ? '✅ Sim' : '❌ Não'}</li>
-              </ul>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -423,19 +725,31 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
 
       {/* 6. CUPONS */}
       {activeTab === 'coupons' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {coupons.map((c) => (
-            <div key={c.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">CUPOM ATIVO</span>
-              <h3 className="text-xl font-black text-white font-mono">{c.code}</h3>
-              <p className="text-xs text-slate-300">
-                Desconto: <strong>{c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `R$ ${c.discountValue}`}</strong>
-              </p>
-              <p className="text-xs text-slate-400">
-                Utilizado: {c.usedCount} de {c.maxUses} vezes
-              </p>
-            </div>
-          ))}
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsNewCouponModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Criar Cupom
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {coupons.map((c) => (
+              <div key={c.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">CUPOM ATIVO</span>
+                <h3 className="text-xl font-black text-white font-mono">{c.code}</h3>
+                <p className="text-xs text-slate-300">
+                  Desconto: <strong>{c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `R$ ${c.discountValue}`}</strong>
+                </p>
+                <p className="text-xs text-slate-400">
+                  Utilizado: {c.usedCount} de {c.maxUses} vezes
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -456,9 +770,17 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
             <div key={t.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-purple-400">{t.tenantName}</span>
-                <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold">
-                  {t.status}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold">
+                    {t.status}
+                  </span>
+                  <button
+                    onClick={() => setReplyingTicket(t)}
+                    className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition"
+                  >
+                    Responder
+                  </button>
+                </div>
               </div>
               <h4 className="text-sm font-bold text-white">{t.subject}</h4>
               <div className="space-y-2 pt-2 border-t border-slate-800/80">
@@ -476,14 +798,26 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
 
       {/* 9. AVISOS DA PLATAFORMA */}
       {activeTab === 'announcements' && (
-        <div className="space-y-4">
-          {announcements.map((a) => (
-            <div key={a.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">BANER ATIVO</span>
-              <h4 className="text-base font-bold text-white">{a.title}</h4>
-              <p className="text-xs text-slate-300">{a.message}</p>
-            </div>
-          ))}
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsNewAnnouncementModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Aviso
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {announcements.map((a) => (
+              <div key={a.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">BANNER ATIVO</span>
+                <h4 className="text-base font-bold text-white">{a.title}</h4>
+                <p className="text-xs text-slate-300">{a.message}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -567,7 +901,259 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         </div>
       )}
 
-      {/* MODAL DE RAZÃO PARA IMPERSONATION (ACESSO SUPORTE SEGURANÇA) */}
+      {/* MODAL 1: NOVA EMPRESA (TENANT) */}
+      {isNewTenantModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateTenant} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Cadastrar Nova Empresa (Tenant)</h3>
+              <button type="button" onClick={() => setIsNewTenantModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Nome da Empresa</label>
+                <input required type="text" value={newTenantForm.name} onChange={e => setNewTenantForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Ex: Supermercado Viva Bem" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Slug URL</label>
+                <input required type="text" value={newTenantForm.slug} onChange={e => setNewTenantForm(p => ({ ...p, slug: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="ex: supermercado-viva-bem" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Plano Inicial</label>
+                <select value={newTenantForm.planId} onChange={e => setNewTenantForm(p => ({ ...p, planId: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                  <option value="plan_free">Gratuito</option>
+                  <option value="plan_basic">Básico</option>
+                  <option value="plan_pro">Profissional</option>
+                  <option value="plan_premium">Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">E-mail do Proprietário</label>
+                <input required type="email" value={newTenantForm.ownerEmail} onChange={e => setNewTenantForm(p => ({ ...p, ownerEmail: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="proprietario@empresa.com.br" />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewTenantModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Cadastrar Empresa</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 2: EDITAR TENANT */}
+      {editingTenant && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleSaveTenantEdit} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Editar Empresa & Plano</h3>
+              <button type="button" onClick={() => setEditingTenant(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Nome da Empresa</label>
+                <input required type="text" value={editingTenant.name} onChange={e => setEditingTenant({ ...editingTenant, name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Plano Assinado</label>
+                <select value={editingTenant.planId} onChange={e => setEditingTenant({ ...editingTenant, planId: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                  <option value="plan_free">Gratuito</option>
+                  <option value="plan_basic">Básico</option>
+                  <option value="plan_pro">Profissional</option>
+                  <option value="plan_premium">Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Status</label>
+                <select value={editingTenant.status} onChange={e => setEditingTenant({ ...editingTenant, status: e.target.value as any })} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                  <option value="ACTIVE">ATIVO</option>
+                  <option value="SUSPENDED">SUSPENSO</option>
+                  <option value="TRIAL">TRIAL</option>
+                  <option value="EXPIRED">EXPIRADO</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Salvar Alterações</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 3: NOVO USUÁRIO (RBAC) */}
+      {isNewUserModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateUser} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Cadastrar Novo Usuário</h3>
+              <button type="button" onClick={() => setIsNewUserModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Nome Completo</label>
+                <input required type="text" value={newUserForm.name} onChange={e => setNewUserForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">E-mail</label>
+                <input required type="email" value={newUserForm.email} onChange={e => setNewUserForm(p => ({ ...p, email: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Cargo / Role</label>
+                <select value={newUserForm.role} onChange={e => setNewUserForm(p => ({ ...p, role: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                  <option value="SUPER_ADMIN">Super Admin (Global)</option>
+                  <option value="ADMIN">Admin da Empresa</option>
+                  <option value="SUPPORT">Suporte Técnico</option>
+                  <option value="FINANCIAL">Financeiro</option>
+                  <option value="OPERATIONAL">Operacional</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Empresa Associada</label>
+                <select value={newUserForm.tenantId} onChange={e => setNewUserForm(p => ({ ...p, tenantId: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                  {tenants.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewUserModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Cadastrar Usuário</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 4: NOVO PLANO */}
+      {isNewPlanModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreatePlan} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Criar Novo Plano SaaS</h3>
+              <button type="button" onClick={() => setIsNewPlanModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Nome do Plano</label>
+                <input required type="text" value={newPlanForm.name} onChange={e => setNewPlanForm(p => ({ ...p, name: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Ex: Plano Intermediário" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Preço Mensal (R$)</label>
+                  <input required type="number" step="0.01" value={newPlanForm.priceMonthly} onChange={e => setNewPlanForm(p => ({ ...p, priceMonthly: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Limite Artes/Mês</label>
+                  <input required type="number" value={newPlanForm.artsLimitMonth} onChange={e => setNewPlanForm(p => ({ ...p, artsLimitMonth: parseInt(e.target.value) || 100 }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewPlanModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Salvar Plano</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 5: NOVO CUPOM */}
+      {isNewCouponModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateCoupon} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Criar Cupom de Desconto</h3>
+              <button type="button" onClick={() => setIsNewCouponModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Código do Cupom</label>
+                <input required type="text" value={newCouponForm.code} onChange={e => setNewCouponForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono" placeholder="Ex: OFERTA50" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Tipo de Desconto</label>
+                  <select value={newCouponForm.discountType} onChange={e => setNewCouponForm(p => ({ ...p, discountType: e.target.value as any }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                    <option value="PERCENTAGE">Porcentagem (%)</option>
+                    <option value="FIXED">Valor Fixo (R$)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Valor do Desconto</label>
+                  <input required type="number" value={newCouponForm.discountValue} onChange={e => setNewCouponForm(p => ({ ...p, discountValue: parseFloat(e.target.value) || 0 }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewCouponModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Criar Cupom</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 6: RESPONDER TICKET DE SUPORTE */}
+      {replyingTicket && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleReplyTicket} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Responder Ticket #{replyingTicket.id}</h3>
+              <button type="button" onClick={() => setReplyingTicket(null)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <p className="text-xs text-slate-300">Cliente: <strong>{replyingTicket.tenantName}</strong> • {replyingTicket.subject}</p>
+
+            <div className="space-y-2">
+              <label className="block text-xs text-slate-400">Sua Resposta de Suporte</label>
+              <textarea required rows={4} value={ticketReplyText} onChange={e => setTicketReplyText(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white" placeholder="Digite a resposta que será enviada ao lojista..." />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setReplyingTicket(null)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl flex items-center gap-1.5"><Send className="w-4 h-4" /> Enviar Resposta</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 7: NOVO AVISO DA PLATAFORMA */}
+      {isNewAnnouncementModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateAnnouncement} className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white">Publicar Novo Aviso na Plataforma</h3>
+              <button type="button" onClick={() => setIsNewAnnouncementModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Título do Aviso</label>
+                <input required type="text" value={newAnnouncementForm.title} onChange={e => setNewAnnouncementForm(p => ({ ...p, title: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Ex: Manutenção Programada das 02h às 04h" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Mensagem Completa</label>
+                <textarea required rows={3} value={newAnnouncementForm.message} onChange={e => setNewAnnouncementForm(p => ({ ...p, message: e.target.value }))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Digite os detalhes para os comerciantes..." />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button type="button" onClick={() => setIsNewAnnouncementModalOpen(false)} className="px-4 py-2 bg-slate-800 text-xs text-slate-300 rounded-xl">Cancelar</button>
+              <button type="submit" className="px-4 py-2 bg-purple-600 text-xs font-bold text-white rounded-xl">Publicar Aviso</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL DE IMPERSONATION (ACESSO SUPORTE SEGURANÇA) */}
       {impersonateReasonModal && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-amber-500/40 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative overflow-hidden">
