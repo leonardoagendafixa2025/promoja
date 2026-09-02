@@ -3,7 +3,11 @@ import { useAuth } from '../../context/AuthContext';
 import { Store, UserCheck, Shield, Sparkles, KeyRound } from 'lucide-react';
 import { LoginModal } from '../Auth/LoginModal';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onOpenSuperAdmin?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
   const { currentTenant, currentUser, allTenants, switchTenant } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -56,7 +60,10 @@ export const Navbar: React.FC = () => {
 
         {/* BADGE DA ROLE */}
         {currentUser?.role === 'SUPER_ADMIN' ? (
-          <span className="hidden xl:flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          <span 
+            onClick={onOpenSuperAdmin}
+            className="hidden xl:flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 cursor-pointer hover:bg-purple-500/30 transition"
+          >
             <Shield className="w-3.5 h-3.5 text-purple-400" />
             Super Admin
           </span>
@@ -68,7 +75,10 @@ export const Navbar: React.FC = () => {
       </div>
 
       {isLoginModalOpen && (
-        <LoginModal onClose={() => setIsLoginModalOpen(false)} />
+        <LoginModal 
+          onClose={() => setIsLoginModalOpen(false)}
+          onSelectSuperAdmin={onOpenSuperAdmin}
+        />
       )}
     </header>
   );

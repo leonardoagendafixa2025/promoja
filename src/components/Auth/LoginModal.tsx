@@ -1,16 +1,18 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Store, UserCheck, Check, Sparkles, X, Lock } from 'lucide-react';
+import { Shield, Store, UserCheck, Check, Sparkles, X, Lock, ArrowRight } from 'lucide-react';
 
 interface LoginModalProps {
   onClose: () => void;
+  onSelectSuperAdmin?: () => void;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAdmin }) => {
   const { allUsers, allTenants, currentUser, currentTenant, switchUser } = useAuth();
 
   const handleSelectProfile = (userId: string) => {
     switchUser(userId);
+    if (onSelectSuperAdmin) onSelectSuperAdmin();
     onClose();
   };
 
@@ -24,17 +26,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
             </span>
             <h3 className="text-xl font-black text-white font-display">Alternador de Perfil & Autenticação</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-2">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <p className="text-xs text-slate-300">
-          Como o PROMOJÁ é uma plataforma <strong>SaaS Multi-Tenant</strong>, selecione como deseja visualizar o sistema:
+          Selecione o perfil desejado para acessar o painel de administração global ou da loja:
         </p>
 
-        {/* LISTA DE OPÇÕES DE LOGIN E PERFIS */}
-        <div className="space-y-3">
+        {/* BOTÃO DIRETO SUPER ADMIN */}
+        <button
+          onClick={() => {
+            const superAdminUser = allUsers.find(u => u.role === 'SUPER_ADMIN') || allUsers[0];
+            handleSelectProfile(superAdminUser.id);
+          }}
+          className="w-full p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-rose-600 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-wider shadow-xl flex items-center justify-between transition transform active:scale-95"
+        >
+          <div className="flex items-center space-x-3">
+            <Shield className="w-6 h-6 text-amber-200" />
+            <div className="text-left">
+              <div className="text-sm font-black font-display">⚡ ENTRAR NO SUPER ADMIN CONTROL CENTER</div>
+              <div className="text-[11px] font-normal text-purple-100">Acesso Total ao SaaS, Clientes, MRR e Configurações Globais</div>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-white" />
+        </button>
+
+        {/* LISTA DE OUTROS PERFIS */}
+        <div className="space-y-3 pt-2">
           {allUsers.map((user) => {
             const tenant = allTenants.find(t => t.id === user.tenantId);
             const isCurrent = currentUser?.id === user.id;
@@ -45,7 +65,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                 onClick={() => handleSelectProfile(user.id)}
                 className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
                   isCurrent
-                    ? 'bg-rose-950/40 border-rose-500/80 shadow-lg shadow-rose-950/50'
+                    ? 'bg-purple-950/40 border-purple-500/80 shadow-lg shadow-purple-950/50'
                     : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
                 }`}
               >
@@ -73,37 +93,25 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                     <p className="text-xs text-slate-400 mt-0.5">
                       Email: <strong className="text-white font-mono">{user.email}</strong> • Empresa: <strong className="text-slate-300">{tenant?.name}</strong>
                     </p>
-
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {user.role === 'SUPER_ADMIN'
-                        ? '🔑 Acesso total: Painel Global, Cadastro de Clientes, Receita MRR e Template Builder.'
-                        : '🛒 Acesso da Loja: Campanhas, Produtos Google Drive, Folhetos PDF e TV da Loja.'}
-                    </p>
                   </div>
                 </div>
 
                 <div className="shrink-0 pl-3">
-                  {isCurrent ? (
-                    <span className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold flex items-center gap-1 shadow">
-                      <Check className="w-4 h-4" /> Perfil Ativo
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700">
-                      Entrar Como
-                    </span>
-                  )}
+                  <span className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow">
+                    Entrar
+                  </span>
                 </div>
               </button>
             );
           })}
         </div>
 
-        <div className="pt-4 border-t border-slate-800 text-center">
+        <div className="pt-2 border-t border-slate-800 text-center">
           <button
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
           >
-            Fechar
+            Fechar Janela
           </button>
         </div>
       </div>

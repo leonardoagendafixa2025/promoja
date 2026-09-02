@@ -65,7 +65,7 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      <Navbar />
+      <Navbar onOpenSuperAdmin={() => setActiveTab('superadmin')} />
 
       <div className="flex-1 flex overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
