@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Layout/Navbar';
-import { Sidebar, NavTab } from './components/Layout/Sidebar';
+import { Sidebar, NavTab, SuperAdminSubTab } from './components/Layout/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { ProductsView } from './components/Products/ProductsView';
 import { BrandKitView } from './components/BrandKit/BrandKitView';
@@ -18,6 +18,8 @@ import { ShieldAlert, LogOut } from 'lucide-react';
 const MainContent: React.FC = () => {
   const { isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [superAdminSubTab, setSuperAdminSubTab] = useState<SuperAdminSubTab>('dashboard');
+
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | undefined>(undefined);
@@ -68,7 +70,12 @@ const MainContent: React.FC = () => {
       <Navbar onOpenSuperAdmin={() => setActiveTab('superadmin')} />
 
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          superAdminSubTab={superAdminSubTab}
+          setSuperAdminSubTab={setSuperAdminSubTab}
+        />
 
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
@@ -96,7 +103,7 @@ const MainContent: React.FC = () => {
 
             {activeTab === 'tv' && <TVPlayerView />}
 
-            {activeTab === 'superadmin' && <SuperAdminView />}
+            {activeTab === 'superadmin' && <SuperAdminView subTab={superAdminSubTab} />}
           </div>
         </main>
       </div>

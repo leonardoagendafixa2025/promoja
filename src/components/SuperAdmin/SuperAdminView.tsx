@@ -34,9 +34,19 @@ import {
 } from 'lucide-react';
 import { Tenant, User, SubscriptionPlan, Transaction, Coupon, SupportTicket, PlatformAnnouncement, FeatureFlag, AuditLog, SystemHealth } from '../../types';
 
-export const SuperAdminView: React.FC = () => {
+import { SuperAdminSubTab } from '../Layout/Sidebar';
+
+interface SuperAdminViewProps {
+  subTab?: SuperAdminSubTab;
+}
+
+export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashboard' }) => {
   const { currentTenant, currentUser, impersonateTenant } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tenants' | 'users' | 'plans' | 'financial' | 'coupons' | 'templates' | 'support' | 'announcements' | 'audit' | 'health' | 'feature_flags'>('dashboard');
+  const [activeTab, setActiveTab] = useState<SuperAdminSubTab>(subTab);
+
+  useEffect(() => {
+    setActiveTab(subTab);
+  }, [subTab]);
 
   // Estados de dados da API
   const [metricsData, setMetricsData] = useState<any>(null);
