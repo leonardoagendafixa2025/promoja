@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Layout/Navbar';
 import { Sidebar, NavTab } from './components/Layout/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -13,8 +13,10 @@ import { FlyerGeneratorView } from './components/Flyer/FlyerGeneratorView';
 import { TVPlayerView } from './components/TV/TVPlayerView';
 import { PublicCatalogView } from './components/Public/PublicCatalogView';
 import { SuperAdminView } from './components/SuperAdmin/SuperAdminView';
+import { ShieldAlert, LogOut } from 'lucide-react';
 
 const MainContent: React.FC = () => {
+  const { isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -43,6 +45,26 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* BANNER DO MODO IMPERSONATION / SUPORTE ADMINISTRATIVO */}
+      {isImpersonating && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white px-4 py-2 text-xs font-bold flex items-center justify-between shadow-lg sticky top-0 z-50 animate-pulse">
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="w-4 h-4 text-amber-200" />
+            <span>
+              <strong>MODO ADMINISTRADOR SUPORTE</strong> — Você está acessando a conta de <span className="underline">{impersonatedTenant?.name}</span> ({impersonationReason || 'Suporte Técnico'}).
+            </span>
+          </div>
+
+          <button
+            onClick={exitImpersonation}
+            className="px-3 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-900 text-amber-300 border border-amber-400/40 text-[11px] font-black uppercase flex items-center gap-1.5 transition shadow"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            SAIR DO MODO SUPORTE E VOLTAR AO SUPER ADMIN
+          </button>
+        </div>
+      )}
+
       <Navbar />
 
       <div className="flex-1 flex overflow-hidden">

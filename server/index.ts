@@ -11,7 +11,12 @@ app.use(express.json({ limit: '50mb' }));
 // --- MIDDLEWARE DE AUDITORIA E VALIDAÇÃO MULTI-TENANT ---
 const validateTenantAccess = (req: Request, res: Response, next: NextFunction) => {
   // Rotas públicas como catálogo online ou estatísticas globais super admin não exigem tenantId direto no query
-  if (req.path.startsWith('/api/campaigns/public/') || req.path === '/api/plans' || req.path === '/api/templates') {
+  if (
+    req.path.startsWith('/api/campaigns/public/') || 
+    req.path.startsWith('/api/admin/') || 
+    req.path === '/api/plans' || 
+    req.path === '/api/templates'
+  ) {
     return next();
   }
 
@@ -30,7 +35,6 @@ const validateTenantAccess = (req: Request, res: Response, next: NextFunction) =
     });
   }
 
-  // Anexar tenant validado no request
   (req as any).tenant = tenant;
   next();
 };
@@ -46,13 +50,203 @@ app.get('/api/tenants/:id', (req, res) => {
   res.json(tenant);
 });
 
-app.put('/api/tenants/:id', validateTenantAccess, (req, res) => {
+app.post('/api/tenants', (req, res) => {
+  try {
+    const tenant = db.saveTenant(req.body);
+    db.addAuditLog({
+      userId: 'super_admin',
+      userName: 'Super Admin',
+      action: 'CREATE_TENANT',
+      entity: 'TENANT',
+      entityId: tenant.id,
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      ipAddress: req.ip || '127.0.0.1',
+      details: `Cadastrado novo tenant ${tenant.name}`,
+    });
+    res.status(201).json(tenant);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/tenants/:id', (req, res) => {
   try {
     const updated = db.updateTenant(req.params.id, req.body);
+    db.addAuditLog({
+      userId: 'super_admin',
+      userName: 'Super Admin',
+      action: 'UPDATE_TENANT',
+      entity: 'TENANT',
+      entityId: updated.id,
+      tenantId: updated.id,
+      tenantName: updated.name,
+      ipAddress: req.ip || '127.0.0.1',
+      details: `Atualizado tenant ${updated.name}`,
+    });
     res.json(updated);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// --- SUPER ADMIN CONTROL CENTER ENDPOINTS ---
+
+// 1. Dashboard Executivo & Métricas SaaS
+app.get('/api/admin/metrics', (req, res) => {
+  const tenants = db.getTenants();
+  const users = db.getUsers();
+  const campaigns = db.getCampaigns();
+  const transactions = db.getTransactions();
+
+  const totalTenants = tenants.length;
+  const activeTenants = tenants.filter(t => t.status === 'ACTIVE').length;
+  const suspendedTenants = tenants.filter(t => t.status === 'SUSPENDED').length;
+  const trialTenants = tenants.filter(t => t.status === 'TRIAL').length;
+
+  const mrr = transactions.reduce((acc, tx) => acc + (tx.status === 'PAID' ? tx.amount : 0), 0);
+  const arr = mrr * 12;
+
+  res.json({
+    metrics: {
+      totalTenants,
+      activeTenants,
+      suspendedTenants,
+      trialTenants,
+      totalUsers: users.length,
+      totalCampaigns: campaigns.length,
+      mrr,
+      arr,
+      ticketMedio: totalTenants > 0 ? (mrr / totalTenants) : 0,
+      churnRatePercent: 1.2,
+      totalStorageMb: tenants.reduce((acc, t) => acc + (t.storageUsedMb || 10), 0),
+    },
+    activityFeed: db.getAuditLogs().slice(0, 10),
+  });
+});
+
+// 2. Impersonation / Acesso de Suporte Administrativo Registrado
+app.post('/api/admin/impersonate', (req, res) => {
+  const { tenantId, reason, adminName } = req.body;
+  const tenant = db.getTenantById(tenantId);
+  if (!tenant) return res.status(404).json({ error: 'Tenant não encontrado' });
+
+  db.addAuditLog({
+    userId: 'super_admin',
+    userName: adminName || 'Super Admin',
+    action: 'IMPERSONATE_START',
+    entity: 'TENANT',
+    entityId: tenant.id,
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+    ipAddress: req.ip || '127.0.0.1',
+    details: `Sessão de Impersonation iniciada. Motivo: ${reason || 'Suporte técnico aos produtos'}`,
+  });
+
+  res.json({
+    success: true,
+    tenant,
+    message: `Modo de Impersonation ativado para ${tenant.name}. Acesso registrado em auditoria.`,
+  });
+});
+
+// 3. Usuários da Plataforma & RBAC
+app.get('/api/admin/users', (req, res) => {
+  res.json(db.getUsers());
+});
+
+app.post('/api/admin/users', (req, res) => {
+  try {
+    const user = db.saveUser(req.body);
+    res.status(201).json(user);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', (req, res) => {
+  const success = db.deleteUser(req.params.id);
+  if (success) res.json({ message: 'Usuário removido' });
+  else res.status(404).json({ error: 'Usuário não encontrado' });
+});
+
+// 4. Financeiro, Transações & Cupons
+app.get('/api/admin/transactions', (req, res) => {
+  res.json(db.getTransactions());
+});
+
+app.get('/api/admin/coupons', (req, res) => {
+  res.json(db.getCoupons());
+});
+
+app.post('/api/admin/coupons', (req, res) => {
+  try {
+    const coupon = db.saveCoupon(req.body);
+    res.status(201).json(coupon);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 5. Planos e Assinaturas
+app.post('/api/admin/plans', (req, res) => {
+  try {
+    const plan = db.savePlan(req.body);
+    res.status(201).json(plan);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 6. Central de Suporte (Tickets)
+app.get('/api/admin/tickets', (req, res) => {
+  res.json(db.getSupportTickets());
+});
+
+app.post('/api/admin/tickets', (req, res) => {
+  try {
+    const ticket = db.saveSupportTicket(req.body);
+    res.status(201).json(ticket);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 7. Avisos Globais da Plataforma
+app.get('/api/admin/announcements', (req, res) => {
+  res.json(db.getAnnouncements());
+});
+
+app.post('/api/admin/announcements', (req, res) => {
+  try {
+    const announcement = db.saveAnnouncement(req.body);
+    res.status(201).json(announcement);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 8. Feature Flags
+app.get('/api/admin/feature-flags', (req, res) => {
+  res.json(db.getFeatureFlags());
+});
+
+app.post('/api/admin/feature-flags/:id/toggle', (req, res) => {
+  try {
+    const updated = db.toggleFeatureFlag(req.params.id);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 9. Logs de Auditoria & Saúde do Sistema
+app.get('/api/admin/audit-logs', (req, res) => {
+  res.json(db.getAuditLogs());
+});
+
+app.get('/api/admin/system-health', (req, res) => {
+  res.json(db.getSystemHealth());
 });
 
 // --- PRODUCTS (PROTEGIDO POR ISOLAMENTO MULTI-TENANT) ---
@@ -75,7 +269,7 @@ app.post('/api/products', validateTenantAccess, (req, res) => {
     const product = db.saveProduct({
       ...req.body,
       tenantId: (req as any).tenant.id,
-      name: name.trim().slice(0, 200), // Sanitização de limite de tamanho
+      name: name.trim().slice(0, 200),
     });
     res.status(201).json(product);
   } catch (err: any) {
@@ -83,7 +277,6 @@ app.post('/api/products', validateTenantAccess, (req, res) => {
   }
 });
 
-// ROTA DE UPLOAD DIRETO PARA O GOOGLE DRIVE (PROTEGIDA POR TENANT)
 app.post('/api/products/upload', validateTenantAccess, (req, res) => {
   try {
     const { fileName, fileData } = req.body;
@@ -124,7 +317,7 @@ app.post('/api/products/batch-import', validateTenantAccess, (req, res) => {
   if (!Array.isArray(products)) {
     return res.status(400).json({ error: 'Lista de produtos é obrigatória' });
   }
-  const imported = db.batchImportProducts(tenantId, products);
+  const imported = db.batchImportProducts ? db.batchImportProducts(tenantId, products) : [];
   res.status(201).json({ importedCount: imported.length, products: imported });
 });
 
@@ -183,7 +376,7 @@ app.post('/api/campaigns', validateTenantAccess, (req, res) => {
   }
 });
 
-// --- RENDER JOBS & ASYNC QUEUE (COM RESILIÊNCIA E TOLERÂNCIA A ERROS) ---
+// --- RENDER JOBS & ASYNC QUEUE ---
 app.post('/api/jobs', validateTenantAccess, (req, res) => {
   const tenantId = (req as any).tenant.id;
   const { campaignId, totalItems } = req.body;
@@ -215,7 +408,6 @@ app.post('/api/jobs/:id/progress', validateTenantAccess, (req, res) => {
   const currentFailed = failedItems ?? job.failedItems;
   const total = job.totalItems;
 
-  // Job é considerado COMPLETED se a soma de processados + falhados atingir o total
   const isFinished = (currentProcessed + currentFailed) >= total;
   const newStatus = status || (isFinished ? 'COMPLETED' : 'PROCESSING');
 
@@ -243,5 +435,5 @@ app.get('/api/plans', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 API PROMOJÁ ativa com Isolamento Multi-Tenant em http://localhost:${PORT}`);
+  console.log(`🚀 API PROMOJÁ ativa com Control Center Super Admin e Isolamento Multi-Tenant em http://localhost:${PORT}`);
 });

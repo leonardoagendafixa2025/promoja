@@ -1,4 +1,20 @@
-import { Tenant, User, Product, Template, Campaign, RenderJob, Design, SubscriptionPlan } from '../src/types';
+import { 
+  Tenant, 
+  User, 
+  Product, 
+  Template, 
+  Campaign, 
+  RenderJob, 
+  Design, 
+  SubscriptionPlan,
+  Transaction,
+  Coupon,
+  SupportTicket,
+  PlatformAnnouncement,
+  FeatureFlag,
+  AuditLog,
+  SystemHealth
+} from '../src/types';
 import { INITIAL_PLANS, INITIAL_TENANTS, INITIAL_USERS, INITIAL_PRODUCTS, INITIAL_TEMPLATES, INITIAL_CAMPAIGNS } from './seedData';
 
 class DatabaseManager {
@@ -10,6 +26,12 @@ class DatabaseManager {
   private renderJobs: Map<string, RenderJob> = new Map();
   private designs: Map<string, Design> = new Map();
   private plans: Map<string, SubscriptionPlan> = new Map();
+  private transactions: Map<string, Transaction> = new Map();
+  private coupons: Map<string, Coupon> = new Map();
+  private supportTickets: Map<string, SupportTicket> = new Map();
+  private announcements: Map<string, PlatformAnnouncement> = new Map();
+  private featureFlags: Map<string, FeatureFlag> = new Map();
+  private auditLogs: AuditLog[] = [];
 
   constructor() {
     this.seed();
@@ -22,6 +44,136 @@ class DatabaseManager {
     INITIAL_PRODUCTS.forEach(p => this.products.set(p.id, p));
     INITIAL_TEMPLATES.forEach(t => this.templates.set(t.id, t));
     INITIAL_CAMPAIGNS.forEach(c => this.campaigns.set(c.id, c));
+
+    // Seed Transações Financeiras
+    const initialTxs: Transaction[] = [
+      {
+        id: 'tx_101',
+        tenantId: 'tenant_supermercado_modelo',
+        tenantName: 'Supermercado Modelo',
+        amount: 149.90,
+        paymentMethod: 'CREDIT_CARD',
+        status: 'PAID',
+        date: '2026-03-01T10:30:00.000Z',
+        gatewayRef: 'pay_99818231',
+      },
+      {
+        id: 'tx_102',
+        tenantId: 'tenant_acougue_prime',
+        tenantName: 'Açougue & Boutique Prime',
+        amount: 299.90,
+        paymentMethod: 'PIX',
+        status: 'PAID',
+        date: '2026-03-02T14:15:00.000Z',
+        gatewayRef: 'pix_77218391',
+      }
+    ];
+    initialTxs.forEach(tx => this.transactions.set(tx.id, tx));
+
+    // Seed Cupons
+    const initialCoupons: Coupon[] = [
+      {
+        id: 'cup_PROMOJA20',
+        code: 'PROMOJA20',
+        discountType: 'PERCENTAGE',
+        discountValue: 20,
+        validUntil: '2026-12-31T23:59:59.000Z',
+        maxUses: 100,
+        usedCount: 14,
+        status: 'ACTIVE',
+      },
+      {
+        id: 'cup_VAREJO50',
+        code: 'VAREJO50',
+        discountType: 'FIXED',
+        discountValue: 50,
+        validUntil: '2026-06-30T23:59:59.000Z',
+        maxUses: 50,
+        usedCount: 8,
+        status: 'ACTIVE',
+      }
+    ];
+    initialCoupons.forEach(c => this.coupons.set(c.id, c));
+
+    // Seed Tickets Suporte
+    const initialTickets: SupportTicket[] = [
+      {
+        id: 'tkt_201',
+        tenantId: 'tenant_supermercado_modelo',
+        tenantName: 'Supermercado Modelo',
+        subject: 'Dúvida sobre diagramação de folheto PDF A4',
+        category: 'DUVIDA',
+        priority: 'MEDIUM',
+        status: 'IN_PROGRESS',
+        assignedTo: 'Carlos Mendes',
+        createdAt: '2026-03-01T16:00:00.000Z',
+        updatedAt: '2026-03-01T16:30:00.000Z',
+        messages: [
+          {
+            senderName: 'Roberto Silva',
+            senderRole: 'USER',
+            content: 'Como faço para organizar 8 produtos em 2 páginas no folheto A4?',
+            createdAt: '2026-03-01T16:00:00.000Z',
+          },
+          {
+            senderName: 'Carlos Mendes (Suporte)',
+            senderRole: 'SUPPORT',
+            content: 'Olá Roberto! O sistema realiza a quebra automática de 4 itens por página no PDF A4. Basta incluir os 8 produtos na campanha.',
+            createdAt: '2026-03-01T16:30:00.000Z',
+          }
+        ]
+      }
+    ];
+    initialTickets.forEach(t => this.supportTickets.set(t.id, t));
+
+    // Seed Avisos Globais
+    const initialAnnouncements: PlatformAnnouncement[] = [
+      {
+        id: 'anc_301',
+        title: '🚀 Nova Atualização: Editor com Auto-Scale de Tipografia!',
+        message: 'Agora os títulos longos de produtos e preços grandes se ajustam automaticamente nas artes.',
+        type: 'INFO',
+        priority: 'NORMAL',
+        startDate: '2026-03-01T00:00:00.000Z',
+        endDate: '2026-04-01T00:00:00.000Z',
+        targetAudience: 'ALL',
+        isActive: true,
+      }
+    ];
+    initialAnnouncements.forEach(a => this.announcements.set(a.id, a));
+
+    // Seed Feature Flags
+    const initialFlags: FeatureFlag[] = [
+      {
+        id: 'ff_bulk_zip',
+        key: 'bulk_zip_export',
+        name: 'Exportação em Lote de ZIP de Alta Resolução',
+        description: 'Libera download comprimido em 1 clique de todas as artes da campanha.',
+        isEnabledGlobally: true,
+        allowedPlans: ['plan_pro', 'plan_premium'],
+      },
+      {
+        id: 'ff_tv_4k',
+        key: 'tv_4k_presenter',
+        name: 'Apresentador TV 4K com Letreiro Contínuo',
+        description: 'Modo vitrine digital 16:9 em tempo real para telas de loja.',
+        isEnabledGlobally: true,
+        allowedPlans: ['plan_pro', 'plan_premium'],
+      }
+    ];
+    initialFlags.forEach(f => this.featureFlags.set(f.id, f));
+
+    // Seed Logs Auditoria
+    this.auditLogs.push({
+      id: 'log_401',
+      userId: 'user_superadmin',
+      userName: 'Carlos Mendes',
+      action: 'LOGIN',
+      entity: 'AUTH',
+      timestamp: new Date().toISOString(),
+      ipAddress: '189.120.45.12',
+      details: 'Super Admin efetuou login no Control Center',
+    });
   }
 
   clearAllData(tenantId?: string) {
@@ -48,8 +200,35 @@ class DatabaseManager {
     return this.tenants.get(id);
   }
 
-  getTenantBySlug(slug: string): Tenant | undefined {
-    return Array.from(this.tenants.values()).find(t => t.slug === slug);
+  saveTenant(tenant: Partial<Tenant>): Tenant {
+    const id = tenant.id || `tenant_${Date.now()}`;
+    const slug = tenant.slug || tenant.name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'tenant';
+    const fullTenant: Tenant = {
+      id,
+      name: tenant.name || 'Nova Empresa',
+      slug,
+      status: tenant.status || 'ACTIVE',
+      planId: tenant.planId || 'plan_pro',
+      createdAt: tenant.createdAt || new Date().toISOString(),
+      ownerEmail: tenant.ownerEmail || 'contato@empresa.com.br',
+      ownerPhone: tenant.ownerPhone || '(11) 99999-8888',
+      storageUsedMb: tenant.storageUsedMb || 12.4,
+      usersCount: tenant.usersCount || 1,
+      flyersCount: tenant.flyersCount || 0,
+      brandKit: tenant.brandKit || {
+        primaryColor: '#e11d48',
+        secondaryColor: '#facc15',
+        accentColor: '#16a34a',
+        fontFamily: 'Outfit',
+        phone: '(11) 99999-8888',
+        instagram: '@empresa',
+        address: 'Rua Principal, 100',
+        slogan: 'As melhores ofertas!',
+        customFooter: 'Ofertas válidas hoje.',
+      }
+    };
+    this.tenants.set(id, fullTenant);
+    return fullTenant;
   }
 
   updateTenant(id: string, updates: Partial<Tenant>): Tenant {
@@ -60,54 +239,36 @@ class DatabaseManager {
     return updated;
   }
 
-  updateBrandKit(tenantId: string, brandKit: Partial<Tenant['brandKit']>): Tenant {
-    const tenant = this.tenants.get(tenantId);
-    if (!tenant) throw new Error('Tenant não encontrado');
-    tenant.brandKit = { ...tenant.brandKit, ...brandKit };
-    this.tenants.set(tenantId, tenant);
-    return tenant;
+  // --- USERS & RBAC ---
+  getUsers(): User[] {
+    return Array.from(this.users.values());
   }
 
-  createTenant(name: string, planId: string = 'plan_pro'): Tenant {
-    const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const id = `tenant_${Date.now()}`;
-    const newTenant: Tenant = {
+  saveUser(user: Partial<User>): User {
+    const id = user.id || `user_${Date.now()}`;
+    const fullUser: User = {
       id,
-      name,
-      slug,
-      status: 'ACTIVE',
-      planId,
-      createdAt: new Date().toISOString(),
-      brandKit: {
-        primaryColor: '#e11d48',
-        secondaryColor: '#facc15',
-        accentColor: '#16a34a',
-        fontFamily: 'Outfit',
-        instagram: `@${slug}`,
-        phone: '(11) 90000-0000',
-        address: 'Endereço da Loja',
-        slogan: 'As melhores ofertas você encontra aqui!',
-        customFooter: 'Ofertas válidas enquanto durarem os estoques.',
-      }
+      tenantId: user.tenantId || 'tenant_supermercado_modelo',
+      name: user.name || 'Novo Usuário',
+      email: user.email || 'usuario@empresa.com.br',
+      role: user.role || 'ADMIN',
+      status: user.status || 'ACTIVE',
+      createdAt: user.createdAt || new Date().toISOString(),
+      avatarUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     };
-    this.tenants.set(id, newTenant);
-    return newTenant;
+    this.users.set(id, fullUser);
+    return fullUser;
   }
 
-  // --- USERS ---
-  getUsers(tenantId?: string): User[] {
-    const all = Array.from(this.users.values());
-    if (!tenantId) return all;
-    return all.filter(u => u.tenantId === tenantId);
-  }
-
-  getUserById(id: string): User | undefined {
-    return this.users.get(id);
+  deleteUser(id: string): boolean {
+    return this.users.delete(id);
   }
 
   // --- PRODUCTS ---
-  getProducts(tenantId: string): Product[] {
-    return Array.from(this.products.values()).filter(p => p.tenantId === tenantId);
+  getProducts(tenantId?: string): Product[] {
+    const all = Array.from(this.products.values());
+    if (tenantId) return all.filter(p => p.tenantId === tenantId);
+    return all;
   }
 
   getProductById(id: string): Product | undefined {
@@ -115,7 +276,7 @@ class DatabaseManager {
   }
 
   saveProduct(product: Partial<Product> & { tenantId: string; name: string; pricePromotional: number }): Product {
-    const id = product.id || `prod_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    const id = product.id || `prod_${Date.now()}`;
     const fullProduct: Product = {
       id,
       tenantId: product.tenantId,
@@ -123,14 +284,14 @@ class DatabaseManager {
       brand: product.brand || '',
       categoryId: product.categoryId || 'cat_geral',
       categoryName: product.categoryName || 'Geral',
-      code: product.code || '',
+      code: product.code || `${Math.floor(1000000000000 + Math.random() * 9000000000000)}`,
       imageUrl: product.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80',
-      priceNormal: product.priceNormal || product.pricePromotional * 1.2,
+      priceNormal: product.priceNormal || 0,
       pricePromotional: product.pricePromotional,
       unit: product.unit || 'UN',
       weight: product.weight || '',
       description: product.description || '',
-      isHighlight: product.isHighlight || false,
+      isHighlight: product.isHighlight ?? true,
       highlightTag: product.highlightTag || 'SUPER OFERTA',
       status: product.status || 'ACTIVE',
       createdAt: product.createdAt || new Date().toISOString(),
@@ -139,13 +300,11 @@ class DatabaseManager {
     return fullProduct;
   }
 
-  deleteProduct(id: string, tenantId: string): boolean {
-    const product = this.products.get(id);
-    if (product && product.tenantId === tenantId) {
-      this.products.delete(id);
-      return true;
-    }
-    return false;
+  deleteProduct(id: string, tenantId?: string): boolean {
+    const prod = this.products.get(id);
+    if (!prod) return false;
+    if (tenantId && prod.tenantId !== tenantId) return false;
+    return this.products.delete(id);
   }
 
   batchImportProducts(tenantId: string, rawProducts: any[]): Product[] {
@@ -166,13 +325,8 @@ class DatabaseManager {
   }
 
   // --- TEMPLATES ---
-  getTemplates(tenantId?: string): Template[] {
-    const all = Array.from(this.templates.values());
-    return all.filter(t => t.isGlobal || t.tenantId === tenantId);
-  }
-
-  getTemplateById(id: string): Template | undefined {
-    return this.templates.get(id);
+  getTemplates(): Template[] {
+    return Array.from(this.templates.values());
   }
 
   saveTemplate(template: Partial<Template>): Template {
@@ -180,22 +334,25 @@ class DatabaseManager {
     const fullTemplate: Template = {
       id,
       name: template.name || 'Novo Template',
-      category: template.category || 'GENERICO',
+      category: template.category || 'SUPERMERCADO',
       format: template.format || 'STORIES_9_16',
       thumbnailUrl: template.thumbnailUrl || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
       elements: template.elements || [],
       bgGradient: template.bgGradient || 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-      bgColor: template.bgColor,
+      hasSpotlight: template.hasSpotlight ?? true,
       isGlobal: template.isGlobal ?? true,
       tenantId: template.tenantId,
+      status: template.status || 'PUBLISHED',
     };
     this.templates.set(id, fullTemplate);
     return fullTemplate;
   }
 
   // --- CAMPAIGNS ---
-  getCampaigns(tenantId: string): Campaign[] {
-    return Array.from(this.campaigns.values()).filter(c => c.tenantId === tenantId);
+  getCampaigns(tenantId?: string): Campaign[] {
+    const all = Array.from(this.campaigns.values());
+    if (tenantId) return all.filter(c => c.tenantId === tenantId);
+    return all;
   }
 
   getCampaignById(id: string): Campaign | undefined {
@@ -203,7 +360,7 @@ class DatabaseManager {
   }
 
   getCampaignBySlug(tenantSlug: string, campaignSlug: string): Campaign | undefined {
-    const tenant = this.getTenantBySlug(tenantSlug);
+    const tenant = Array.from(this.tenants.values()).find(t => t.slug === tenantSlug);
     if (!tenant) return undefined;
     return Array.from(this.campaigns.values()).find(c => c.tenantId === tenant.id && c.slug === campaignSlug);
   }
@@ -270,9 +427,136 @@ class DatabaseManager {
     return updated;
   }
 
-  // --- PLANS ---
+  // --- TRANSAÇÕES, PLANOS E CUPONS ---
   getPlans(): SubscriptionPlan[] {
     return Array.from(this.plans.values());
+  }
+
+  savePlan(plan: Partial<SubscriptionPlan>): SubscriptionPlan {
+    const id = plan.id || `plan_${Date.now()}`;
+    const fullPlan: SubscriptionPlan = {
+      id,
+      name: plan.name || 'Novo Plano',
+      priceMonthly: plan.priceMonthly || 99.90,
+      priceYearly: plan.priceYearly || 999.00,
+      artsLimitMonth: plan.artsLimitMonth || 300,
+      hasWatermark: plan.hasWatermark ?? false,
+      hasBulkGenerator: plan.hasBulkGenerator ?? true,
+      hasPdfFlyer: plan.hasPdfFlyer ?? true,
+      hasOnlineCatalog: plan.hasOnlineCatalog ?? true,
+      hasTvMode: plan.hasTvMode ?? true,
+      hasMultiStore: plan.hasMultiStore ?? false,
+      status: plan.status || 'ACTIVE',
+    };
+    this.plans.set(id, fullPlan);
+    return fullPlan;
+  }
+
+  getTransactions(): Transaction[] {
+    return Array.from(this.transactions.values());
+  }
+
+  getCoupons(): Coupon[] {
+    return Array.from(this.coupons.values());
+  }
+
+  saveCoupon(coupon: Partial<Coupon>): Coupon {
+    const id = coupon.id || `cup_${coupon.code || Date.now()}`;
+    const fullCoupon: Coupon = {
+      id,
+      code: coupon.code ? coupon.code.toUpperCase() : 'PROMOJA',
+      discountType: coupon.discountType || 'PERCENTAGE',
+      discountValue: coupon.discountValue || 10,
+      validUntil: coupon.validUntil || '2026-12-31T23:59:59.000Z',
+      maxUses: coupon.maxUses || 100,
+      usedCount: coupon.usedCount || 0,
+      status: coupon.status || 'ACTIVE',
+    };
+    this.coupons.set(id, fullCoupon);
+    return fullCoupon;
+  }
+
+  // --- TICKETS SUPORTE & COMUNICAÇÃO ---
+  getSupportTickets(): SupportTicket[] {
+    return Array.from(this.supportTickets.values());
+  }
+
+  saveSupportTicket(ticket: Partial<SupportTicket>): SupportTicket {
+    const id = ticket.id || `tkt_${Date.now()}`;
+    const fullTicket: SupportTicket = {
+      id,
+      tenantId: ticket.tenantId || 'tenant_supermercado_modelo',
+      tenantName: ticket.tenantName || 'Supermercado Modelo',
+      subject: ticket.subject || 'Atendimento de Suporte',
+      category: ticket.category || 'DUVIDA',
+      priority: ticket.priority || 'MEDIUM',
+      status: ticket.status || 'OPEN',
+      assignedTo: ticket.assignedTo || 'Equipe PromoJá',
+      createdAt: ticket.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: ticket.messages || [],
+    };
+    this.supportTickets.set(id, fullTicket);
+    return fullTicket;
+  }
+
+  getAnnouncements(): PlatformAnnouncement[] {
+    return Array.from(this.announcements.values());
+  }
+
+  saveAnnouncement(announcement: Partial<PlatformAnnouncement>): PlatformAnnouncement {
+    const id = announcement.id || `anc_${Date.now()}`;
+    const fullAnnouncement: PlatformAnnouncement = {
+      id,
+      title: announcement.title || 'Aviso da Plataforma',
+      message: announcement.message || '',
+      type: announcement.type || 'INFO',
+      priority: announcement.priority || 'NORMAL',
+      startDate: announcement.startDate || new Date().toISOString(),
+      endDate: announcement.endDate || '2026-12-31T23:59:59.000Z',
+      targetAudience: announcement.targetAudience || 'ALL',
+      isActive: announcement.isActive ?? true,
+    };
+    this.announcements.set(id, fullAnnouncement);
+    return fullAnnouncement;
+  }
+
+  getFeatureFlags(): FeatureFlag[] {
+    return Array.from(this.featureFlags.values());
+  }
+
+  toggleFeatureFlag(id: string): FeatureFlag {
+    const flag = this.featureFlags.get(id);
+    if (!flag) throw new Error('Feature Flag não encontrada');
+    flag.isEnabledGlobally = !flag.isEnabledGlobally;
+    this.featureFlags.set(id, flag);
+    return flag;
+  }
+
+  // --- LOGS DE AUDITORIA E LOGGING DE IMPERSONATION ---
+  getAuditLogs(): AuditLog[] {
+    return this.auditLogs;
+  }
+
+  addAuditLog(log: Omit<AuditLog, 'id' | 'timestamp'>) {
+    const newLog: AuditLog = {
+      ...log,
+      id: `log_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+    };
+    this.auditLogs.unshift(newLog);
+    if (this.auditLogs.length > 500) this.auditLogs.pop();
+  }
+
+  getSystemHealth(): SystemHealth {
+    return {
+      databaseStatus: 'HEALTHY',
+      authServiceStatus: 'HEALTHY',
+      storageStatus: 'HEALTHY',
+      pendingJobsCount: Array.from(this.renderJobs.values()).filter(j => j.status === 'PROCESSING' || j.status === 'PENDING').length,
+      errorRatePercent: 0.02,
+      uptimeSeconds: Math.floor(process.uptime()),
+    };
   }
 }
 

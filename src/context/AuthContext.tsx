@@ -6,6 +6,11 @@ interface AuthContextType {
   currentUser: User | null;
   allTenants: Tenant[];
   allUsers: User[];
+  isImpersonating: boolean;
+  impersonatedTenant: Tenant | null;
+  impersonationReason: string | null;
+  impersonateTenant: (tenantId: string, reason?: string) => Promise<void>;
+  exitImpersonation: () => void;
   switchTenant: (tenantId: string) => void;
   switchUser: (userId: string) => void;
   updateBrandKitState: (brandKit: Partial<Tenant['brandKit']>) => void;
@@ -20,6 +25,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // IMPERSONATION DE TENANT PARA SUPORTE ADMINISTRATIVO
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonatedTenant, setImpersonatedTenant] = useState<Tenant | null>(null);
+  const [impersonationReason, setImpersonationReason] = useState<string | null>(null);
+  const [originalUser, setOriginalUser] = useState<User | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
@@ -27,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const [tenantsRes, usersRes] = await Promise.all([
         fetch('/api/tenants'),
-        fetch('/api/users')
+        fetch('/api/admin/users')
       ]);
       const tenants: Tenant[] = await tenantsRes.json();
       const users: User[] = await usersRes.json();
@@ -38,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (tenants.length > 0) {
         const defaultTenant = tenants[0];
         setCurrentTenant(defaultTenant);
-        const defaultUser = users.find(u => u.tenantId === defaultTenant.id) || users[0];
+        const defaultUser = users.find(u => u.role === 'SUPER_ADMIN') || users[0];
         setCurrentUser(defaultUser);
       }
     } catch (err) {
@@ -51,6 +63,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     loadData();
   }, []);
+
+  const impersonateTenant = async (tenantId: string, reason: string = 'Atendimento de suporte técnico') => {
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          reason,
+          adminName: currentUser?.name || 'Super Admin',
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha ao iniciar impersonation');
+
+      setOriginalUser(currentUser);
+      setIsImpersonating(true);
+      setImpersonatedTenant(data.tenant);
+      setImpersonationReason(reason);
+      setCurrentTenant(data.tenant);
+    } catch (err: any) {
+      alert('Erro ao acessar conta como suporte: ' + err.message);
+    }
+  };
+
+  const exitImpersonation = () => {
+    setIsImpersonating(false);
+    setImpersonatedTenant(null);
+    setImpersonationReason(null);
+    if (originalUser) setCurrentUser(originalUser);
+    if (allTenants.length > 0) setCurrentTenant(allTenants[0]);
+  };
 
   const switchTenant = (tenantId: string) => {
     const found = allTenants.find(t => t.id === tenantId);
@@ -90,6 +134,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currentUser,
       allTenants,
       allUsers,
+      isImpersonating,
+      impersonatedTenant,
+      impersonationReason,
+      impersonateTenant,
+      exitImpersonation,
       switchTenant,
       switchUser,
       updateBrandKitState,
@@ -103,6 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  if (!context) throw new Error('useAuth deve ser usado dentro de AuthProvider');
   return context;
 };
