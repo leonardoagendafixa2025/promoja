@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Store, UserCheck, Shield, Sparkles, LogOut, User, KeyRound } from 'lucide-react';
+import { Store, UserCheck, Shield, Sparkles, LogOut, User, KeyRound, Globe } from 'lucide-react';
 import { LoginModal } from '../Auth/LoginModal';
 
 interface NavbarProps {
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
             <User className="w-4 h-4 text-purple-400" />
             <div className="flex flex-col">
               <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Usuário Logado</span>
-              <span className="text-xs font-bold text-white truncate max-w-[130px]">{currentUser.name}</span>
+              <span className="text-xs font-bold text-white truncate max-w-[150px]">{currentUser.name}</span>
             </div>
             <button
               onClick={handleLogout}
@@ -72,34 +72,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
           </button>
         )}
 
-        {/* EMPRESA ATIVA */}
-        {currentTenant && (
-          <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
-            <Store className="w-4 h-4 text-rose-400" />
+        {/* INDICADOR DE CONTEXTO: SE FOR SUPER ADMIN EXIBE VISÃO GLOBAL SAAS, SE FOR LOJISTA EXIBE SUA EMPRESA */}
+        {currentUser?.role === 'SUPER_ADMIN' ? (
+          <div className="flex items-center space-x-2 bg-purple-950/40 border border-purple-500/40 rounded-xl px-3 py-1.5">
+            <Globe className="w-4 h-4 text-purple-400" />
             <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Sua Empresa</span>
-              
-              {currentUser?.role === 'SUPER_ADMIN' ? (
-                // SUPER ADMIN PODE ALTERNAR EMPRESAS NO SELECT
-                <select
-                  value={currentTenant.id}
-                  onChange={(e) => switchTenant(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-amber-300 focus:outline-none cursor-pointer"
-                >
-                  {allTenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id} className="bg-slate-900 text-white">
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                // LOJISTA COMUM VÊ APENAS O NOME DA SUA PRÓPRIA EMPRESA (SEM DROPDOWN)
+              <span className="text-[9px] uppercase font-bold tracking-wider text-purple-300">Ambiente SaaS</span>
+              <span className="text-xs font-black text-purple-200">Visão Global (Todas as Empresas)</span>
+            </div>
+          </div>
+        ) : (
+          currentTenant && (
+            <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
+              <Store className="w-4 h-4 text-rose-400" />
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Sua Empresa</span>
                 <span className="text-xs font-bold text-white truncate max-w-[140px]">
                   {currentTenant.name}
                 </span>
-              )}
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
 
