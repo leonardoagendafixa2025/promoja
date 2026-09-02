@@ -19,8 +19,7 @@ import {
   Activity,
   Cpu,
   Flag,
-  Sparkles,
-  ArrowLeft
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -97,24 +96,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="space-y-6">
         {/* MODES SWITCHER / CARD DO AMBIENTE */}
         {isSuperAdminMode ? (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950 to-slate-900 border border-purple-500/40 shadow-xl space-y-2">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950 to-slate-900 border border-purple-500/40 shadow-xl">
             <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-black shadow">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-xs font-black text-white font-display">CONTROL CENTER</p>
-                <p className="text-[10px] text-purple-300 font-bold">Modo Super Admin</p>
+                <p className="text-[10px] text-purple-300 font-bold">Super Admin Global</p>
               </div>
             </div>
-
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className="w-full mt-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Voltar ao Painel da Loja
-            </button>
           </div>
         ) : (
           currentTenant && (
@@ -235,25 +226,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
             })
           )}
-
-          {/* Atalho de transição no rodape do menu se for Super Admin */}
-          {!isSuperAdminMode && currentUser?.role === 'SUPER_ADMIN' && (
-            <div className="pt-4 mt-4 border-t border-slate-800/80">
-              <button
-                onClick={() => setActiveTab('superadmin')}
-                className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-black text-xs text-white bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 transition shadow-lg shadow-purple-950/60"
-              >
-                <div className="flex items-center space-x-2">
-                  <Shield className="w-4 h-4 text-purple-200" />
-                  <span>Painel Super Admin</span>
-                </div>
-              </button>
-            </div>
-          )}
         </nav>
       </div>
 
-      {/* Rota Externa do Catálogo Público */}
+      {/* Rota Externa do Catálogo Público (Apenas em Modo Lojista) */}
       {!isSuperAdminMode && currentTenant && (
         <div className="pt-4 border-t border-slate-800/80">
           <a
