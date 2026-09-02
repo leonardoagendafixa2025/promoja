@@ -101,25 +101,73 @@ class DatabaseManager {
         id: 'tkt_201',
         tenantId: 'tenant_supermercado_modelo',
         tenantName: 'Supermercado Modelo',
-        subject: 'Dúvida sobre diagramação de folheto PDF A4',
+        userName: 'Roberto Silva',
+        subject: 'Como organizar 8 produtos em 2 páginas no folheto A4?',
         category: 'DUVIDA',
-        priority: 'MEDIUM',
-        status: 'IN_PROGRESS',
-        assignedTo: 'Carlos Mendes',
+        priority: 'HIGH',
+        status: 'OPEN',
         createdAt: '2026-03-01T16:00:00.000Z',
         updatedAt: '2026-03-01T16:30:00.000Z',
         messages: [
           {
             senderName: 'Roberto Silva',
             senderRole: 'USER',
-            content: 'Como faço para organizar 8 produtos em 2 páginas no folheto A4?',
+            content: 'Olá! Estamos criando a campanha de final de semana e gostaríamos de gerar o encarte A4 impresso em 2 páginas com 8 produtos.',
             createdAt: '2026-03-01T16:00:00.000Z',
+          }
+        ]
+      },
+      {
+        id: 'tkt_202',
+        tenantId: 'tenant_acougue_prime',
+        tenantName: 'Açougue & Boutique Prime',
+        userName: 'Fernando Carneiro',
+        subject: 'Configuração da TV de Ofertas 4K com vinheta animada',
+        category: 'TECNICO',
+        priority: 'MEDIUM',
+        status: 'IN_PROGRESS',
+        assignedTo: 'Carlos Mendes',
+        createdAt: '2026-03-02T10:15:00.000Z',
+        updatedAt: '2026-03-02T11:00:00.000Z',
+        messages: [
+          {
+            senderName: 'Fernando Carneiro',
+            senderRole: 'USER',
+            content: 'Gostaria de saber como conectar o player da TV 4K diretamente no navegador da Smart TV da loja.',
+            createdAt: '2026-03-02T10:15:00.000Z',
           },
           {
             senderName: 'Carlos Mendes (Suporte)',
             senderRole: 'SUPPORT',
-            content: 'Olá Roberto! O sistema realiza a quebra automática de 4 itens por página no PDF A4. Basta incluir os 8 produtos na campanha.',
-            createdAt: '2026-03-01T16:30:00.000Z',
+            content: 'Olá Fernando! Basta abrir a URL /tv no navegador da Smart TV e digitar o código de pareamento que aparece na tela.',
+            createdAt: '2026-03-02T11:00:00.000Z',
+          }
+        ]
+      },
+      {
+        id: 'tkt_203',
+        tenantId: 'tenant_supermercado_modelo',
+        tenantName: 'Supermercado Modelo',
+        userName: 'Roberto Silva',
+        subject: 'Solicitação de aumento de cota de artes no Plano Profissional',
+        category: 'FINANCEIRO',
+        priority: 'LOW',
+        status: 'RESOLVED',
+        assignedTo: 'Carlos Mendes',
+        createdAt: '2026-02-20T14:00:00.000Z',
+        updatedAt: '2026-02-20T15:30:00.000Z',
+        messages: [
+          {
+            senderName: 'Roberto Silva',
+            senderRole: 'USER',
+            content: 'Atingimos o limite mensal do nosso plano e gostaríamos de liberar um pacote adicional de 100 artes.',
+            createdAt: '2026-02-20T14:00:00.000Z',
+          },
+          {
+            senderName: 'Carlos Mendes (Suporte)',
+            senderRole: 'SUPPORT',
+            content: 'Solicitação atendida com sucesso! Cota adicional de 100 artes liberada no seu painel.',
+            createdAt: '2026-02-20T15:30:00.000Z',
           }
         ]
       }

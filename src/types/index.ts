@@ -244,6 +244,7 @@ export interface SupportTicket {
   id: string;
   tenantId: string;
   tenantName: string;
+  userName?: string;
   subject: string;
   category: 'FINANCEIRO' | 'TECNICO' | 'DUVIDA' | 'SUGESTAO';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
