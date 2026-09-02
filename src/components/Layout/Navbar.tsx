@@ -30,6 +30,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
 
       {/* Control Buttons & Tenant Selectors */}
       <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* BOTÃO DIRETO SUPER ADMIN NO TOPO DO SITE */}
+        <button
+          onClick={onOpenSuperAdmin}
+          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-black flex items-center gap-1.5 transition shadow-lg shadow-purple-950/50"
+        >
+          <Shield className="w-4 h-4 text-purple-200" />
+          <span>🛡️ Super Admin Control Center</span>
+        </button>
+
         {/* BOTÃO DE PERFIL */}
         <button
           onClick={() => setIsLoginModalOpen(true)}
@@ -57,21 +66,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
             </select>
           </div>
         </div>
-
-        {/* BADGE DA ROLE */}
-        {currentUser?.role === 'SUPER_ADMIN' ? (
-          <span 
-            onClick={onOpenSuperAdmin}
-            className="hidden xl:flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 cursor-pointer hover:bg-purple-500/30 transition"
-          >
-            <Shield className="w-3.5 h-3.5 text-purple-400" />
-            Super Admin
-          </span>
-        ) : (
-          <span className="hidden xl:flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-            Admin Tenant
-          </span>
-        )}
       </div>
 
       {isLoginModalOpen && (
