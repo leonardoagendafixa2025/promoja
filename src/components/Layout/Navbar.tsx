@@ -72,24 +72,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
           </button>
         )}
 
-        {/* SELECTOR DE EMPRESA */}
-        <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
-          <Store className="w-4 h-4 text-rose-400" />
-          <div className="flex flex-col">
-            <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Empresa Ativa</span>
-            <select
-              value={currentTenant?.id || ''}
-              onChange={(e) => switchTenant(e.target.value)}
-              className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
-            >
-              {allTenants.map((tenant) => (
-                <option key={tenant.id} value={tenant.id} className="bg-slate-900 text-white">
-                  {tenant.name}
-                </option>
-              ))}
-            </select>
+        {/* EMPRESA ATIVA */}
+        {currentTenant && (
+          <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
+            <Store className="w-4 h-4 text-rose-400" />
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Sua Empresa</span>
+              
+              {currentUser?.role === 'SUPER_ADMIN' ? (
+                // SUPER ADMIN PODE ALTERNAR EMPRESAS NO SELECT
+                <select
+                  value={currentTenant.id}
+                  onChange={(e) => switchTenant(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-amber-300 focus:outline-none cursor-pointer"
+                >
+                  {allTenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id} className="bg-slate-900 text-white">
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                // LOJISTA COMUM VÊ APENAS O NOME DA SUA PRÓPRIA EMPRESA (SEM DROPDOWN)
+                <span className="text-xs font-bold text-white truncate max-w-[140px]">
+                  {currentTenant.name}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {isLoginModalOpen && (
