@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -13,9 +13,13 @@ import {
   Tv,
   CheckCircle2,
   TrendingUp,
-  Zap
+  Zap,
+  Database,
+  ExternalLink
 } from 'lucide-react';
 import { NavTab } from '../Layout/Sidebar';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { SupabaseConnectModal } from '../SuperAdmin/SupabaseConnectModal';
 
 interface DashboardViewProps {
   setActiveTab: (tab: NavTab) => void;
@@ -24,6 +28,9 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOpenCampaignWizard }) => {
   const { currentTenant } = useAuth();
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+
+  const supabaseActive = isSupabaseConfigured();
 
   const metrics = [
     { title: 'Artes Geradas este Mês', value: '148', change: '+24% este mês', icon: Layers, color: 'from-rose-500 to-rose-600' },
@@ -54,6 +61,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOp
       variants={containerVariants}
       className="space-y-8 pb-12"
     >
+      {/* CARD DESTACADO DE BANCO DE DADOS SUPABASE */}
+      <motion.div 
+        variants={itemVariants}
+        className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition ${
+          supabaseActive
+            ? 'bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border-emerald-500/50'
+            : 'bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-950 border-amber-500/60'
+        }`}
+      >
+        <div className="flex items-center space-x-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shrink-0 shadow-lg ${
+            supabaseActive ? 'bg-emerald-600' : 'bg-amber-600'
+          }`}>
+            <Database className="w-6 h-6 text-white" />
+          </div>
+
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${supabaseActive ? 'bg-emerald-400 animate-ping' : 'bg-amber-400 animate-pulse'}`} />
+              <h3 className="text-sm font-black text-white font-display uppercase tracking-wider">
+                {supabaseActive ? 'Banco de Dados Supabase PostgreSQL Conectado' : '⚡ Conexão Supabase PostgreSQL'}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Projeto Ref: <strong className="text-emerald-400 font-mono">ajndysndfrnsgkkknguy</strong> • {supabaseActive ? 'Dados sincronizados na nuvem em tempo real.' : 'Insira sua chave API para ativar consultas em nuvem.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsSupabaseModalOpen(true)}
+          className={`px-5 py-2.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-2 shrink-0 transition ${
+            supabaseActive
+              ? 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40'
+              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-950/50'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          {supabaseActive ? 'Gerenciar Supabase' : 'CONFIGURAR SUPABASE AGORA'}
+        </button>
+      </motion.div>
+
       {/* Banner Principal Futurista / Neon Retail */}
       <motion.div 
         variants={itemVariants}
@@ -68,182 +117,121 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOp
             CENTRAL DE CAMPANHAS PROMOCIONAIS
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-black text-white font-display leading-tight tracking-tight">
-            Bem-vindo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-300 to-amber-400">{currentTenant?.name || 'Empresa'}</span>!
+          <h2 className="text-3xl sm:text-4xl font-black text-white font-display tracking-tight leading-tight">
+            Transforme seus produtos e preços em <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-300 to-emerald-400">campanhas completas em segundos</span>.
           </h2>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Cadastre os seus produtos e preços uma única vez. O PROMOJÁ transforma essas informações automaticamente em Posts para Instagram, Stories, WhatsApp Status, Folhetos PDF, Catálogo Online e Mídias para TV.
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Bem-vindo ao <strong>PROMOJÁ</strong> de <span className="text-white font-bold">{currentTenant?.name}</span>. Gere artes para Feed, Stories, Status do WhatsApp, Folhetos PDF e TV da Loja de uma só vez.
           </p>
 
-          <div className="pt-3 flex flex-wrap gap-4">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+          <div className="pt-2 flex flex-wrap items-center gap-4">
+            <button
               onClick={onOpenCampaignWizard}
-              className="px-7 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-sm shadow-xl shadow-rose-950/60 flex items-center gap-2 transition"
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs uppercase tracking-wider shadow-xl shadow-rose-950/60 flex items-center gap-2 transition transform active:scale-95"
             >
-              <PlusCircle className="w-5 h-5 text-white" />
-              CRIAR CAMPANHA COMPLETA
-            </motion.button>
+              <PlusCircle className="w-5 h-5" />
+              CRIAR NOVA CAMPANHA AGORA
+            </button>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab('flyer')}
-              className="px-6 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 font-bold text-sm border border-slate-700/80 flex items-center gap-2 transition backdrop-blur shadow"
+            <button
+              onClick={() => setActiveTab('campaigns')}
+              className="px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 font-bold text-xs flex items-center gap-2 transition"
             >
-              <FileText className="w-5 h-5 text-rose-400" />
-              GERAR FOLHETO DIGITAL PDF
-            </motion.button>
+              <Megaphone className="w-4 h-4 text-amber-400" />
+              Ver Minhas Campanhas
+            </button>
           </div>
         </div>
       </motion.div>
 
-      {/* Cards de Métricas com Stagger */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {metrics.map((m, idx) => {
-          const Icon = m.icon;
-          return (
-            <motion.div
-              key={idx}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="glass-card p-6 rounded-2xl relative overflow-hidden group cursor-pointer border border-slate-800/80"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{m.title}</p>
-                  <p className="text-3xl font-black text-white mt-2 font-display">{m.value}</p>
-                  <p className="text-xs text-emerald-400 mt-1 font-semibold flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    {m.change}
-                  </p>
-                </div>
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${m.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition duration-300`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
+      {/* Grid de Métricas do Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {metrics.map((m, idx) => (
+          <motion.div
+            key={idx}
+            variants={itemVariants}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="glass-card rounded-2xl p-5 relative overflow-hidden group border border-slate-800/80 shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold uppercase text-slate-400 tracking-wider">{m.title}</span>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center text-white shadow-md`}>
+                <m.icon className="w-5 h-5" />
               </div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+            </div>
 
-      {/* Ações Rápidas em Grid Interativo */}
+            <div className="mt-4 space-y-1">
+              <span className="text-3xl font-black text-white font-display tracking-tight">{m.value}</span>
+              <p className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> {m.change}
+              </p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Ações Rápidas */}
       <motion.div variants={itemVariants} className="space-y-4">
-        <h3 className="text-lg font-bold text-white font-display flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-rose-400" />
-          Ações Rápidas de Criação
+        <h3 className="text-lg font-black text-white font-display flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-rose-500" />
+          Ações Rápidas & Módulos do Sistema
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <motion.button
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onOpenCampaignWizard}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 transition text-left space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center group-hover:scale-110 transition">
-              <Megaphone className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-bold text-white group-hover:text-rose-400 transition">Criar Campanha</p>
-            <p className="text-xs text-slate-400">Gere todas as mídias juntas</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div 
             onClick={() => setActiveTab('products')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 transition text-left space-y-3 group shadow-lg"
+            className="glass-panel p-6 rounded-2xl hover:border-rose-500/50 cursor-pointer transition group space-y-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
-              <ShoppingBag className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 transition">
+              <ShoppingBag className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-white group-hover:text-amber-400 transition">Cadastrar Produtos</p>
-            <p className="text-xs text-slate-400">Insira itens ou CSV</p>
-          </motion.button>
+            <h4 className="text-base font-bold text-white group-hover:text-rose-400 transition flex items-center justify-between">
+              Catálogo & Google Drive
+              <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-rose-400" />
+            </h4>
+            <p className="text-xs text-slate-400">
+              Cadastre seus produtos com upload automático de fotos para a nuvem do Google Drive.
+            </p>
+          </div>
 
-          <motion.button
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <div 
             onClick={() => setActiveTab('flyer')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/50 transition text-left space-y-3 group shadow-lg"
+            className="glass-panel p-6 rounded-2xl hover:border-emerald-500/50 cursor-pointer transition group space-y-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition">
-              <FileText className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+              <FileText className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition">Folheto PDF</p>
-            <p className="text-xs text-slate-400">Gere encarte impresso</p>
-          </motion.button>
+            <h4 className="text-base font-bold text-white group-hover:text-emerald-400 transition flex items-center justify-between">
+              Folheto Digital PDF (A4)
+              <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400" />
+            </h4>
+            <p className="text-xs text-slate-400">
+              Diagramação multi-páginas de encartes de ofertas em PDF pronto para impressão.
+            </p>
+          </div>
 
-          <motion.button
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveTab('templates')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/50 transition text-left space-y-3 group shadow-lg"
-          >
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition">
-              <Layers className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-bold text-white group-hover:text-blue-400 transition">Templates Prontos</p>
-            <p className="text-xs text-slate-400">Modelos para seu setor</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <div 
             onClick={() => setActiveTab('tv')}
-            className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-purple-500/50 transition text-left space-y-3 group shadow-lg"
+            className="glass-panel p-6 rounded-2xl hover:border-amber-500/50 cursor-pointer transition group space-y-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition">
-              <Tv className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition">
+              <Tv className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-white group-hover:text-purple-400 transition">TV da Loja</p>
-            <p className="text-xs text-slate-400">Slides 16:9 em tela cheia</p>
-          </motion.button>
-        </div>
-      </motion.div>
-
-      {/* Campanhas Ativas Recentes */}
-      <motion.div variants={itemVariants} className="glass-panel p-6 rounded-3xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-white font-display">Campanhas Recentes em Andamento</h3>
-            <p className="text-xs text-slate-400">Gerencie e faça download das suas campanhas promocionais</p>
-          </div>
-          <button
-            onClick={() => setActiveTab('campaigns')}
-            className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 transition"
-          >
-            Ver Central <ArrowUpRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="divide-y divide-slate-800">
-          <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow">
-                🔥
-              </div>
-              <div>
-                <h4 className="text-base font-bold text-white">OFERTAS DO FINAL DE SEMANA</h4>
-                <p className="text-xs text-slate-400">6 Produtos • Validade: 04/09 até 07/09/2026</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-500/30">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                30 Artes Geradas
-              </span>
-              <button
-                onClick={() => setActiveTab('campaigns')}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow"
-              >
-                Abrir Central
-              </button>
-            </div>
+            <h4 className="text-base font-bold text-white group-hover:text-amber-400 transition flex items-center justify-between">
+              TV de Ofertas (16:9 4K)
+              <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400" />
+            </h4>
+            <p className="text-xs text-slate-400">
+              Apresentador de slides promocionais em tela cheia com letreiro contínuo para TVs da loja.
+            </p>
           </div>
         </div>
       </motion.div>
+
+      {isSupabaseModalOpen && (
+        <SupabaseConnectModal onClose={() => setIsSupabaseModalOpen(false)} />
+      )}
     </motion.div>
   );
 };
