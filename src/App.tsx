@@ -14,10 +14,10 @@ import { TVPlayerView } from './components/TV/TVPlayerView';
 import { PublicCatalogView } from './components/Public/PublicCatalogView';
 import { PublicHomeView } from './components/Public/PublicHomeView';
 import { SuperAdminView } from './components/SuperAdmin/SuperAdminView';
-import { ShieldAlert, LogOut } from 'lucide-react';
+import { ShieldAlert, LogOut, Sparkles } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { currentUser, isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
+  const { currentUser, isLoading, isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [superAdminSubTab, setSuperAdminSubTab] = useState<SuperAdminSubTab>('dashboard');
 
@@ -35,7 +35,22 @@ const MainContent: React.FC = () => {
     return <PublicCatalogView tenantSlug={tenantSlug} campaignSlug={campaignSlug} />;
   }
 
-  // 2. Proteção de Rota Privada: Se o visitante NÃO estiver logado, exibe a Landing Page Pública (HOME)
+  // 2. Estado de Carregamento Inicial (Evita Tela Branca)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-400 flex items-center justify-center shadow-2xl shadow-rose-950/80 animate-pulse">
+          <Sparkles className="w-6 h-6 text-white" />
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+          <span className="text-xs font-bold font-display text-slate-300">Iniciando PROMOJÁ...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Proteção de Rota Privada: Se o visitante NÃO estiver logado, exibe a Landing Page Pública (HOME)
   if (!currentUser) {
     return <PublicHomeView />;
   }
