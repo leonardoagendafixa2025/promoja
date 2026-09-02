@@ -1,14 +1,39 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { db } from './db';
-import fs from 'fs';
-import path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// --- MIDDLEWARE DE AUDITORIA E VALIDAÇÃO MULTI-TENANT ---
+const validateTenantAccess = (req: Request, res: Response, next: NextFunction) => {
+  // Rotas públicas como catálogo online ou estatísticas globais super admin não exigem tenantId direto no query
+  if (req.path.startsWith('/api/campaigns/public/') || req.path === '/api/plans' || req.path === '/api/templates') {
+    return next();
+  }
+
+  const tenantId = (req.query.tenantId as string) || (req.body && req.body.tenantId) || (req.headers['x-tenant-id'] as string);
+
+  if (!tenantId) {
+    return res.status(403).json({ 
+      error: 'Acesso negado: Identificador da empresa (tenantId) é obrigatório para isolamento de dados.' 
+    });
+  }
+
+  const tenant = db.getTenantById(tenantId);
+  if (!tenant) {
+    return res.status(403).json({ 
+      error: 'Acesso negado: Empresa/Tenant não cadastrado ou inativo.' 
+    });
+  }
+
+  // Anexar tenant validado no request
+  (req as any).tenant = tenant;
+  next();
+};
 
 // --- TENANTS & AUTH ---
 app.get('/api/tenants', (req, res) => {
@@ -21,7 +46,7 @@ app.get('/api/tenants/:id', (req, res) => {
   res.json(tenant);
 });
 
-app.put('/api/tenants/:id', (req, res) => {
+app.put('/api/tenants/:id', validateTenantAccess, (req, res) => {
   try {
     const updated = db.updateTenant(req.params.id, req.body);
     res.json(updated);
@@ -30,28 +55,42 @@ app.put('/api/tenants/:id', (req, res) => {
   }
 });
 
-// --- PRODUCTS ---
-app.get('/api/products', (req, res) => {
-  const tenantId = req.query.tenantId as string || 'tenant_supermercado_modelo';
+// --- PRODUCTS (PROTEGIDO POR ISOLAMENTO MULTI-TENANT) ---
+app.get('/api/products', validateTenantAccess, (req, res) => {
+  const tenantId = (req as any).tenant.id;
   const products = db.getProducts(tenantId);
   res.json(products);
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', validateTenantAccess, (req, res) => {
   try {
-    const product = db.saveProduct(req.body);
+    const { name, pricePromotional } = req.body;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'O nome do produto é obrigatório.' });
+    }
+    if (typeof pricePromotional !== 'number' || pricePromotional <= 0) {
+      return res.status(400).json({ error: 'O preço promocional deve ser um valor numérico maior que zero.' });
+    }
+
+    const product = db.saveProduct({
+      ...req.body,
+      tenantId: (req as any).tenant.id,
+      name: name.trim().slice(0, 200), // Sanitização de limite de tamanho
+    });
     res.status(201).json(product);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// ROTA DE UPLOAD DIRETO PARA O GOOGLE DRIVE
-app.post('/api/products/upload', (req, res) => {
+// ROTA DE UPLOAD DIRETO PARA O GOOGLE DRIVE (PROTEGIDA POR TENANT)
+app.post('/api/products/upload', validateTenantAccess, (req, res) => {
   try {
-    const { tenantId, fileName, fileData } = req.body;
+    const { fileName, fileData } = req.body;
+    const tenantId = (req as any).tenant.id;
+
     if (!fileData) {
-      return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+      return res.status(400).json({ error: 'Nenhum arquivo de imagem foi enviado.' });
     }
 
     const driveFileId = `drive_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -60,7 +99,7 @@ app.post('/api/products/upload', (req, res) => {
     res.status(201).json({
       success: true,
       fileId: driveFileId,
-      driveFolder: `Drive/PROMOJÁ_${tenantId || 'Modelo'}/Produtos`,
+      driveFolder: `Drive/PROMOJÁ_${tenantId}/Produtos`,
       imageUrl: googleDriveDirectUrl,
       message: 'Imagem salva com sucesso no Google Drive!'
     });
@@ -69,20 +108,21 @@ app.post('/api/products/upload', (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
-  const tenantId = req.query.tenantId as string || 'tenant_supermercado_modelo';
+app.delete('/api/products/:id', validateTenantAccess, (req, res) => {
+  const tenantId = (req as any).tenant.id;
   const success = db.deleteProduct(req.params.id, tenantId);
   if (success) {
     res.json({ message: 'Produto deletado com sucesso' });
   } else {
-    res.status(404).json({ error: 'Produto não encontrado' });
+    res.status(404).json({ error: 'Produto não encontrado ou pertence a outra loja' });
   }
 });
 
-app.post('/api/products/batch-import', (req, res) => {
-  const { tenantId, products } = req.body;
-  if (!tenantId || !Array.isArray(products)) {
-    return res.status(400).json({ error: 'tenantId e lista de produtos são obrigatórios' });
+app.post('/api/products/batch-import', validateTenantAccess, (req, res) => {
+  const tenantId = (req as any).tenant.id;
+  const { products } = req.body;
+  if (!Array.isArray(products)) {
+    return res.status(400).json({ error: 'Lista de produtos é obrigatória' });
   }
   const imported = db.batchImportProducts(tenantId, products);
   res.status(201).json({ importedCount: imported.length, products: imported });
@@ -103,16 +143,18 @@ app.post('/api/templates', (req, res) => {
   }
 });
 
-// --- CAMPAIGNS ---
-app.get('/api/campaigns', (req, res) => {
-  const tenantId = req.query.tenantId as string || 'tenant_supermercado_modelo';
+// --- CAMPAIGNS (PROTEGIDAS POR ISOLAMENTO MULTI-TENANT) ---
+app.get('/api/campaigns', validateTenantAccess, (req, res) => {
+  const tenantId = (req as any).tenant.id;
   const campaigns = db.getCampaigns(tenantId);
   res.json(campaigns);
 });
 
-app.get('/api/campaigns/:id', (req, res) => {
+app.get('/api/campaigns/:id', validateTenantAccess, (req, res) => {
   const campaign = db.getCampaignById(req.params.id);
-  if (!campaign) return res.status(404).json({ error: 'Campanha não encontrada' });
+  if (!campaign || campaign.tenantId !== (req as any).tenant.id) {
+    return res.status(404).json({ error: 'Campanha não encontrada ou pertence a outra loja' });
+  }
   res.json(campaign);
 });
 
@@ -129,42 +171,57 @@ app.get('/api/campaigns/public/:tenantSlug/:campaignSlug', (req, res) => {
   res.json({ campaign, tenant, products });
 });
 
-app.post('/api/campaigns', (req, res) => {
+app.post('/api/campaigns', validateTenantAccess, (req, res) => {
   try {
-    const campaign = db.saveCampaign(req.body);
+    const campaign = db.saveCampaign({
+      ...req.body,
+      tenantId: (req as any).tenant.id,
+    });
     res.status(201).json(campaign);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// --- RENDER JOBS & ASYNC QUEUE ---
-app.post('/api/jobs', (req, res) => {
-  const { tenantId, campaignId, totalItems } = req.body;
-  if (!tenantId || !campaignId) return res.status(400).json({ error: 'tenantId e campaignId são obrigatórios' });
+// --- RENDER JOBS & ASYNC QUEUE (COM RESILIÊNCIA E TOLERÂNCIA A ERROS) ---
+app.post('/api/jobs', validateTenantAccess, (req, res) => {
+  const tenantId = (req as any).tenant.id;
+  const { campaignId, totalItems } = req.body;
+  if (!campaignId) return res.status(400).json({ error: 'campaignId é obrigatório' });
   
   const job = db.createRenderJob(tenantId, campaignId, totalItems || 10);
   res.status(201).json(job);
 });
 
-app.get('/api/jobs/:id', (req, res) => {
+app.get('/api/jobs/:id', validateTenantAccess, (req, res) => {
   const job = db.getRenderJob(req.params.id);
-  if (!job) return res.status(404).json({ error: 'Job não encontrado' });
+  if (!job || job.tenantId !== (req as any).tenant.id) {
+    return res.status(404).json({ error: 'Job não encontrado ou pertence a outra loja' });
+  }
   res.json(job);
 });
 
-app.post('/api/jobs/:id/progress', (req, res) => {
+app.post('/api/jobs/:id/progress', validateTenantAccess, (req, res) => {
   const { processedItems, failedItems, status, logMessage } = req.body;
   const job = db.getRenderJob(req.params.id);
-  if (!job) return res.status(404).json({ error: 'Job não encontrado' });
+  if (!job || job.tenantId !== (req as any).tenant.id) {
+    return res.status(404).json({ error: 'Job não encontrado' });
+  }
   
   const logs = [...job.logs];
   if (logMessage) logs.push(logMessage);
 
-  const newStatus = status || (processedItems >= job.totalItems ? 'COMPLETED' : 'PROCESSING');
+  const currentProcessed = processedItems ?? job.processedItems;
+  const currentFailed = failedItems ?? job.failedItems;
+  const total = job.totalItems;
+
+  // Job é considerado COMPLETED se a soma de processados + falhados atingir o total
+  const isFinished = (currentProcessed + currentFailed) >= total;
+  const newStatus = status || (isFinished ? 'COMPLETED' : 'PROCESSING');
+
   const updated = db.updateRenderJob(req.params.id, {
-    processedItems: processedItems ?? job.processedItems,
-    failedItems: failedItems ?? job.failedItems,
+    processedItems: currentProcessed,
+    failedItems: currentFailed,
     status: newStatus,
     logs,
     finishedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : undefined,
@@ -179,5 +236,5 @@ app.get('/api/plans', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 API PROMOJÁ ativa em http://localhost:${PORT}`);
+  console.log(`🚀 API PROMOJÁ ativa com Isolamento Multi-Tenant em http://localhost:${PORT}`);
 });

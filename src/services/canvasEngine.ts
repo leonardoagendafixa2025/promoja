@@ -37,7 +37,6 @@ export class CanvasEngine {
     const scaleX = targetWidth / formatDims.width;
     const scaleY = targetHeight / formatDims.height;
 
-    // Converter URLs do Google Drive para links diretos com suporte a CORS
     const parsedProductImageUrl = parseGoogleDriveUrl(product.imageUrl);
     const parsedTenantLogoUrl = parseGoogleDriveUrl(tenant.brandKit.logoUrl || '');
 
@@ -100,7 +99,7 @@ export class CanvasEngine {
           resolve(img);
         };
         img.onerror = () => {
-          console.warn('Aviso: falha ao carregar imagem no Canvas:', src.substring(0, 50));
+          console.warn('Aviso: falha no carregamento de imagem para Canvas:', src.substring(0, 60));
           resolve(img);
         };
         img.src = src;
@@ -117,7 +116,7 @@ export class CanvasEngine {
 
     const sortedElements = [...template.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
-    // 3. DESENHAR ELEMENTOS
+    // 3. DESENHAR ELEMENTOS RESILIENTES
     for (const el of sortedElements) {
       const x = el.posX * scaleX;
       const y = el.posY * scaleY;
@@ -157,6 +156,7 @@ export class CanvasEngine {
           break;
 
         case 'image': {
+          let hasRendered = false;
           if (parsedProductImageUrl && imageCache.has(parsedProductImageUrl)) {
             const img = imageCache.get(parsedProductImageUrl)!;
             if (img.width > 0 && img.height > 0) {
@@ -180,7 +180,29 @@ export class CanvasEngine {
               ctx.shadowOffsetY = 16 * scaleY;
 
               ctx.drawImage(img, drawX, drawY, drawW, drawH);
+              hasRendered = true;
             }
+          }
+
+          // PLACEHOLDER VETORIAL CASO IMAGEM FALHE OU NÃO EXISTA
+          if (!hasRendered) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 4 * scaleX;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 24 * scaleX);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `900 ${28 * scaleX}px Outfit, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(product.name.slice(0, 24), x + w / 2, y + h / 2 - 10 * scaleY);
+
+            ctx.font = `600 ${18 * scaleX}px Outfit, sans-serif`;
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('PROMOJÁ OFERTAS', x + w / 2, y + h / 2 + 25 * scaleY);
           }
           break;
         }
@@ -263,9 +285,17 @@ export class CanvasEngine {
 
           ctx.fillStyle = el.fontColor || '#ffffff';
           const styleStr = el.fontStyle === 'bold' || el.fontStyle === 'black' ? '900 ' : '';
-          const fontSize = (el.fontSize || 36) * scaleX;
+          let fontSize = (el.fontSize || 36) * scaleX;
           const fontFamily = el.fontFamily || tenant.brandKit.fontFamily || 'Outfit';
+
+          // AUTO-FIT DE FONTE SE O TEXTO FOR MUITO EXTENSO
           ctx.font = `${styleStr}${fontSize}px ${fontFamily}, sans-serif`;
+          const measured = ctx.measureText(text).width;
+          if (measured > w * 2.2) {
+            fontSize = fontSize * 0.75;
+            ctx.font = `${styleStr}${fontSize}px ${fontFamily}, sans-serif`;
+          }
+
           ctx.textAlign = (el.alignment as CanvasTextAlign) || 'center';
           ctx.textBaseline = 'top';
 
@@ -311,8 +341,17 @@ export class CanvasEngine {
           ctx.shadowOffsetY = 10 * scaleY;
 
           ctx.fillStyle = el.fontColor || '#facc15';
-          const fontSize = (el.fontSize || 96) * scaleX;
+          let fontSize = (el.fontSize || 96) * scaleX;
+
+          // AUTO-SCALE PARA PREÇOS EXTENSOS
           ctx.font = `900 ${fontSize}px Outfit, sans-serif`;
+          const measuredPriceWidth = ctx.measureText(formatted).width;
+          if (measuredPriceWidth > w * 0.95) {
+            const scale = (w * 0.95) / measuredPriceWidth;
+            fontSize = fontSize * scale;
+            ctx.font = `900 ${fontSize}px Outfit, sans-serif`;
+          }
+
           ctx.textAlign = (el.alignment as CanvasTextAlign) || 'center';
           ctx.textBaseline = 'middle';
 
@@ -330,7 +369,9 @@ export class CanvasEngine {
         case 'logo': {
           if (parsedTenantLogoUrl && imageCache.has(parsedTenantLogoUrl)) {
             const logo = imageCache.get(parsedTenantLogoUrl)!;
-            ctx.drawImage(logo, x, y, w, h);
+            if (logo.width > 0) {
+              ctx.drawImage(logo, x, y, w, h);
+            }
           }
           break;
         }
@@ -338,7 +379,9 @@ export class CanvasEngine {
         case 'qr_code': {
           if (qrCodeDataUrl && imageCache.has(qrCodeDataUrl)) {
             const qr = imageCache.get(qrCodeDataUrl)!;
-            ctx.drawImage(qr, x, y, w, h);
+            if (qr.width > 0) {
+              ctx.drawImage(qr, x, y, w, h);
+            }
           }
           break;
         }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RenderJob } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { RefreshCw, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
 
 interface JobProgressModalProps {
@@ -8,24 +9,28 @@ interface JobProgressModalProps {
 }
 
 export const JobProgressModal: React.FC<JobProgressModalProps> = ({ jobId, onComplete }) => {
+  const { currentTenant } = useAuth();
   const [job, setJob] = useState<RenderJob | null>(null);
 
   useEffect(() => {
+    if (!currentTenant) return;
     let interval: any = null;
 
     const checkStatus = async () => {
       try {
-        const res = await fetch(`/api/jobs/${jobId}`);
+        const res = await fetch(`/api/jobs/${jobId}?tenantId=${currentTenant.id}`);
+        if (!res.ok) return;
+
         const data: RenderJob = await res.json();
         setJob(data);
 
         if (data.status === 'PENDING') {
-          // Iniciar simulação de progresso no backend
-          await fetch(`/api/jobs/${jobId}/progress`, {
+          await fetch(`/api/jobs/${jobId}/progress?tenantId=${currentTenant.id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               processedItems: 1,
+              failedItems: 0,
               status: 'PROCESSING',
               logMessage: 'Iniciando renderização gráfica dos formatos...',
             })
@@ -34,7 +39,7 @@ export const JobProgressModal: React.FC<JobProgressModalProps> = ({ jobId, onCom
           const nextProcessed = Math.min(data.totalItems, data.processedItems + Math.floor(Math.random() * 3) + 1);
           const isDone = nextProcessed >= data.totalItems;
 
-          await fetch(`/api/jobs/${jobId}/progress`, {
+          await fetch(`/api/jobs/${jobId}/progress?tenantId=${currentTenant.id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -62,9 +67,9 @@ export const JobProgressModal: React.FC<JobProgressModalProps> = ({ jobId, onCom
     interval = setInterval(checkStatus, 700);
 
     return () => clearInterval(interval);
-  }, [jobId]);
+  }, [jobId, currentTenant]);
 
-  const percentage = job ? Math.min(100, Math.round((job.processedItems / job.totalItems) * 100)) : 0;
+  const percentage = job ? Math.min(100, Math.round(((job.processedItems + job.failedItems) / job.totalItems) * 100)) : 0;
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
