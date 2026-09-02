@@ -12,11 +12,12 @@ import { JobProgressModal } from './components/Campaigns/JobProgressModal';
 import { FlyerGeneratorView } from './components/Flyer/FlyerGeneratorView';
 import { TVPlayerView } from './components/TV/TVPlayerView';
 import { PublicCatalogView } from './components/Public/PublicCatalogView';
+import { PublicHomeView } from './components/Public/PublicHomeView';
 import { SuperAdminView } from './components/SuperAdmin/SuperAdminView';
 import { ShieldAlert, LogOut } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
+  const { currentUser, isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [superAdminSubTab, setSuperAdminSubTab] = useState<SuperAdminSubTab>('dashboard');
 
@@ -24,7 +25,7 @@ const MainContent: React.FC = () => {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | undefined>(undefined);
 
-  // Verificar se estamos acessando a rota pública do catálogo
+  // 1. Rota pública de encartes/catálogo para consumidores do supermercado
   const pathname = window.location.pathname;
   const publicMatch = pathname.match(/^\/ofertas\/([^\/]+)\/([^\/]+)/);
 
@@ -32,6 +33,11 @@ const MainContent: React.FC = () => {
     const tenantSlug = publicMatch[1];
     const campaignSlug = publicMatch[2];
     return <PublicCatalogView tenantSlug={tenantSlug} campaignSlug={campaignSlug} />;
+  }
+
+  // 2. Proteção de Rota Privada: Se o visitante NÃO estiver logado, exibe a Landing Page Pública (HOME)
+  if (!currentUser) {
+    return <PublicHomeView />;
   }
 
   const handleCampaignCreated = (campaignId: string, jobId: string) => {

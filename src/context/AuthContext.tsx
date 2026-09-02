@@ -64,11 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // Se não houver sessão ativa salva, o usuário visitante fica deslogado (null)
+      setCurrentUser(null);
       if (tenants.length > 0) {
-        const defaultTenant = tenants[0];
-        setCurrentTenant(defaultTenant);
-        const defaultUser = users.find(u => u.role === 'SUPER_ADMIN') || users[0];
-        setCurrentUser(defaultUser);
+        setCurrentTenant(tenants[0]);
       }
     } catch (err) {
       console.error('Erro ao carregar dados iniciais:', err);
