@@ -348,64 +348,48 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let elements = [];
+      const fmt = newTemplateForm.format;
+
+      if (fmt === 'FEED_1_1') {
+        // 1080 x 1080 px (Quadrado Instagram 1:1)
+        elements = [
+          { id: `el_${Date.now()}_1`, type: 'ribbon_banner', label: 'Banner Oferta', posX: 140, posY: 35, width: 800, height: 90, bgColor: '#facc15', fontColor: '#0f172a', fontSize: 44, content: 'SUPER OFERTA', zIndex: 1 },
+          { id: `el_${Date.now()}_2`, type: 'image', label: 'Foto do Produto', posX: 190, posY: 145, width: 700, height: 500, zIndex: 2 },
+          { id: `el_${Date.now()}_3`, type: 'text', label: 'Nome do Produto', posX: 60, posY: 675, width: 960, height: 110, dynamicField: '{{nome_produto}}', fontSize: 48, fontColor: '#ffffff', fontStyle: 'black', alignment: 'center', zIndex: 3 },
+          { id: `el_${Date.now()}_4`, type: 'price_promotional', label: 'Preço Promocional', posX: 210, posY: 815, width: 660, height: 140, fontSize: 105, fontColor: '#ffffff', alignment: 'center', zIndex: 5 }
+        ];
+      } else if (fmt === 'TV_16_9') {
+        // 1920 x 1080 px (Full HD TV 16:9 Landscape)
+        elements = [
+          { id: `el_${Date.now()}_1`, type: 'ribbon_banner', label: 'Banner Oferta', posX: 560, posY: 50, width: 800, height: 100, bgColor: '#facc15', fontColor: '#0f172a', fontSize: 48, content: 'SUPER OFERTA DA TV', zIndex: 1 },
+          { id: `el_${Date.now()}_2`, type: 'image', label: 'Foto do Produto', posX: 560, posY: 175, width: 800, height: 540, zIndex: 2 },
+          { id: `el_${Date.now()}_3`, type: 'text', label: 'Nome do Produto', posX: 360, posY: 745, width: 1200, height: 110, dynamicField: '{{nome_produto}}', fontSize: 54, fontColor: '#ffffff', fontStyle: 'black', alignment: 'center', zIndex: 3 },
+          { id: `el_${Date.now()}_4`, type: 'price_promotional', label: 'Preço Promocional', posX: 630, posY: 875, width: 660, height: 130, fontSize: 110, fontColor: '#ffffff', alignment: 'center', zIndex: 5 }
+        ];
+      } else if (fmt === 'FLYER_A4') {
+        // 1240 x 1754 px (Proporção Impressão A4)
+        elements = [
+          { id: `el_${Date.now()}_1`, type: 'ribbon_banner', label: 'Banner Oferta', posX: 120, posY: 80, width: 1000, height: 120, bgColor: '#facc15', fontColor: '#0f172a', fontSize: 56, content: 'OFERTAS DA SEMANA', zIndex: 1 },
+          { id: `el_${Date.now()}_2`, type: 'image', label: 'Foto do Produto', posX: 220, posY: 240, width: 800, height: 750, zIndex: 2 },
+          { id: `el_${Date.now()}_3`, type: 'text', label: 'Nome do Produto', posX: 120, posY: 1040, width: 1000, height: 150, dynamicField: '{{nome_produto}}', fontSize: 56, fontColor: '#ffffff', fontStyle: 'black', alignment: 'center', zIndex: 3 },
+          { id: `el_${Date.now()}_4`, type: 'price_promotional', label: 'Preço Promocional', posX: 290, posY: 1240, width: 660, height: 140, fontSize: 110, fontColor: '#ffffff', alignment: 'center', zIndex: 5 }
+        ];
+      } else {
+        // STORIES_9_16: 1080 x 1920 px (Instagram Stories 9:16 Portrait)
+        elements = [
+          { id: `el_${Date.now()}_1`, type: 'ribbon_banner', label: 'Banner Oferta', posX: 140, posY: 120, width: 800, height: 110, bgColor: '#facc15', fontColor: '#0f172a', fontSize: 52, content: 'SUPER OFERTA', zIndex: 1 },
+          { id: `el_${Date.now()}_2`, type: 'image', label: 'Foto do Produto', posX: 140, posY: 320, width: 800, height: 800, zIndex: 2 },
+          { id: `el_${Date.now()}_3`, type: 'text', label: 'Nome do Produto', posX: 90, posY: 1180, width: 900, height: 180, dynamicField: '{{nome_produto}}', fontSize: 64, fontColor: '#ffffff', fontStyle: 'black', alignment: 'center', zIndex: 3 },
+          { id: `el_${Date.now()}_4`, type: 'price_promotional', label: 'Preço Promocional', posX: 210, posY: 1490, width: 660, height: 145, fontSize: 115, fontColor: '#ffffff', alignment: 'center', zIndex: 5 }
+        ];
+      }
+
       const payload = {
         id: `tpl_${Date.now()}`,
         ...newTemplateForm,
         thumbnailUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
-        elements: [
-          {
-            id: `el_${Date.now()}_1`,
-            type: 'ribbon_banner',
-            label: 'Banner Oferta',
-            posX: 140,
-            posY: 120,
-            width: 800,
-            height: 110,
-            bgColor: '#facc15',
-            fontColor: '#0f172a',
-            fontSize: 52,
-            content: 'SUPER OFERTA',
-            zIndex: 1,
-          },
-          {
-            id: `el_${Date.now()}_2`,
-            type: 'image',
-            label: 'Foto do Produto',
-            posX: 140,
-            posY: 320,
-            width: 800,
-            height: 800,
-            zIndex: 2,
-          },
-          {
-            id: `el_${Date.now()}_3`,
-            type: 'text',
-            label: 'Nome do Produto',
-            posX: 90,
-            posY: 1180,
-            width: 900,
-            height: 180,
-            dynamicField: '{{nome_produto}}',
-            fontSize: 64,
-            fontColor: '#ffffff',
-            fontStyle: 'black',
-            alignment: 'center',
-            zIndex: 3,
-          },
-          {
-            id: `el_${Date.now()}_4`,
-            type: 'price_promotional',
-            label: 'Preço Promocional',
-            posX: 210,
-            posY: 1490,
-            width: 660,
-            height: 145,
-            fontSize: 115,
-            fontColor: '#ffffff',
-            alignment: 'center',
-            zIndex: 5,
-          }
-        ]
+        elements,
       };
 
       const res = await fetch('/api/templates', {
