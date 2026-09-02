@@ -54,11 +54,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
     }
   };
 
-  const autofillLogin = (email: string) => {
-    setLoginEmail(email);
-    setLoginPassword('admin123');
-  };
-
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
@@ -102,27 +97,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
         {/* MODO 1: LOGIN COM E-MAIL E SENHA */}
         {authMode === 'LOGIN' && (
           <form onSubmit={handleLoginFormSubmit} className="space-y-4">
-            {/* CHIPS DE PREENCHIMENTO RÁPIDO PARA TESTE DE PRODUÇÃO */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Preenchimento Rápido para Testes:</span>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => autofillLogin('carlos@promoja.com.br')}
-                  className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-bold hover:bg-purple-500/30 transition flex items-center gap-1"
-                >
-                  <Shield className="w-3 h-3 text-purple-400" /> Carlos (Super Admin)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => autofillLogin('joao@supermodelo.com.br')}
-                  className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-bold hover:bg-rose-500/30 transition flex items-center gap-1"
-                >
-                  <Store className="w-3 h-3 text-rose-400" /> João (Supermercado Modelo)
-                </button>
-              </div>
-            </div>
-
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">E-mail de Acesso</label>
@@ -148,7 +122,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSelectSuperAd
                     type={showPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Digite sua senha (ex: admin123)"
+                    placeholder="Digite sua senha"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-xs text-white focus:outline-none focus:border-purple-500"
                   />
                   <button
