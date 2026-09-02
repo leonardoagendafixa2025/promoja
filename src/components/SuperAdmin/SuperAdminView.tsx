@@ -351,12 +351,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
     }
   };
 
-  // 6. Criar Template Global
+  // 6. Criar Template Global Infalível
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      let elements = [];
+      const templateName = newTemplateForm.name.trim() || `Template ${newTemplateForm.category} (${newTemplateForm.format})`;
       const fmt = newTemplateForm.format;
+      let elements = [];
 
       if (fmt === 'FEED_1_1') {
         // 1080 x 1080 px (Quadrado Instagram 1:1)
@@ -392,35 +393,39 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         ];
       }
 
-      const payload = {
+      const newTemplate: Template = {
         id: `tpl_${Date.now()}`,
-        ...newTemplateForm,
+        name: templateName,
+        category: newTemplateForm.category || 'SUPERMERCADO',
+        format: newTemplateForm.format || 'STORIES_9_16',
         thumbnailUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
+        bgGradient: newTemplateForm.bgGradient || 'linear-gradient(180deg, #be123c 0%, #881337 100%)',
+        hasSpotlight: true,
+        isGlobal: true,
+        status: 'PUBLISHED',
         elements,
       };
 
-      const res = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(() => null);
-
-      let created = payload;
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data) created = data;
+      // 1. Gravar imediatamente no localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem('promoja_custom_templates') || '[]');
+        const updatedCustom = [newTemplate, ...existing.filter((t: any) => t.id !== newTemplate.id)];
+        localStorage.setItem('promoja_custom_templates', JSON.stringify(updatedCustom));
+      } catch (err) {
+        console.error('Erro ao salvar no localStorage:', err);
       }
 
-      setTemplates(prev => {
-        const updated = [...prev, created as any];
-        try {
-          const customList = updated.filter(t => t.id && t.id.startsWith('tpl_'));
-          localStorage.setItem('promoja_custom_templates', JSON.stringify(customList));
-        } catch (e) {
-          console.error('Erro ao salvar template no localStorage:', e);
-        }
-        return updated;
-      });
+      // 2. Atualizar estado do React no Super Admin
+      setTemplates(prev => [newTemplate, ...prev.filter(t => t.id !== newTemplate.id)]);
+
+      // 3. Sincronizar com o Servidor HTTP
+      fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTemplate)
+      }).catch(err => console.warn('Aviso de sync com servidor:', err));
+
+      // 4. Fechar Modal & Limpar Formulário
       setIsNewTemplateModalOpen(false);
       setNewTemplateForm({
         name: '',
@@ -430,8 +435,10 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         hasSpotlight: true,
         isGlobal: true,
       });
+
+      alert(`✅ Template Global "${templateName}" publicado e salvo com sucesso!`);
     } catch (err: any) {
-      alert('Erro ao criar template global: ' + err.message);
+      alert('Erro ao criar template global: ' + (err.message || 'Erro desconhecido'));
     }
   };
 
