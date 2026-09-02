@@ -1011,105 +1011,199 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
       {/* 9. AVISOS DA PLATAFORMA */}
       {activeTab === 'announcements' && (
         <div className="space-y-6">
-          <div className="flex justify-end">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black text-white font-display flex items-center gap-2">
+                <Bell className="w-5 h-5 text-purple-400" />
+                Avisos Globais da Plataforma
+              </h3>
+              <p className="text-xs text-slate-400">Notificações e banners informativos transmitidos para todos os painéis de lojistas.</p>
+            </div>
+
             <button
               onClick={() => setIsNewAnnouncementModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg"
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-lg shrink-0"
             >
               <Plus className="w-4 h-4" />
-              Novo Aviso
+              <span>Publicar Novo Aviso</span>
             </button>
           </div>
 
-          <div className="space-y-4">
-            {announcements.map((a) => (
-              <div key={a.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
-                <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">BANNER ATIVO</span>
-                <h4 className="text-base font-bold text-white">{a.title}</h4>
-                <p className="text-xs text-slate-300">{a.message}</p>
+          {announcements.length === 0 ? (
+            <div className="glass-panel p-10 rounded-3xl border border-slate-800 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mx-auto">
+                <Bell className="w-7 h-7" />
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 10. AUDITORIA */}
-      {activeTab === 'audit' && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase text-[10px] font-black">
-              <tr>
-                <th className="p-4">Horário</th>
-                <th className="p-4">Usuário</th>
-                <th className="p-4">Ação</th>
-                <th className="p-4">Detalhes</th>
-                <th className="p-4">IP Address</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
-              {auditLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-900/50 transition">
-                  <td className="p-4 text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
-                  <td className="p-4 font-bold text-white">{log.userName}</td>
-                  <td className="p-4 text-purple-400 font-bold">{log.action}</td>
-                  <td className="p-4 text-slate-300">{log.details}</td>
-                  <td className="p-4 text-slate-500">{log.ipAddress}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* 11. SAÚDE DO SISTEMA */}
-      {activeTab === 'health' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
-            <span className="text-xs font-bold text-slate-400">Banco de Dados PostgreSQL</span>
-            <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-              🟢 OPERACIONAL
-            </div>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
-            <span className="text-xs font-bold text-slate-400">Serviço de Autenticação</span>
-            <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-              🟢 OPERACIONAL
-            </div>
-          </div>
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
-            <span className="text-xs font-bold text-slate-400">Armazenamento Cloud</span>
-            <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-              🟢 OPERACIONAL
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 12. FEATURE FLAGS */}
-      {activeTab === 'feature_flags' && (
-        <div className="space-y-4">
-          {featureFlags.map((flag) => (
-            <div key={flag.id} className="glass-panel p-5 rounded-2xl border border-slate-800 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-bold text-white">{flag.name}</h4>
-                <p className="text-xs text-slate-400">{flag.description}</p>
+                <h4 className="text-base font-black text-white">Nenhum Aviso Ativo</h4>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                  Publicações enviadas aqui aparecerão como alertas no painel superior de todos os supermercados cadastrados.
+                </p>
               </div>
-
-              <button
-                onClick={() => handleToggleFlag(flag.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-black transition ${
-                  flag.isEnabledGlobally
-                    ? 'bg-emerald-600 text-white shadow-emerald-950/50'
-                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                }`}
-              >
-                {flag.isEnabledGlobally ? 'ATIVO GLOBALMENTE' : 'DESATIVADO'}
-              </button>
             </div>
-          ))}
+          ) : (
+            <div className="space-y-4">
+              {announcements.map((a) => (
+                <div key={a.id} className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2 relative overflow-hidden shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                      a.type === 'PROMOTION'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                    }`}>
+                      {a.type} • {a.targetAudience}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {new Date(a.startDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h4 className="text-base font-black text-white font-display">{a.title}</h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">{a.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 10. LOGS DE AUDITORIA */}
+      {activeTab === 'audit' && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-black text-white font-display flex items-center gap-2">
+              <Activity className="w-5 h-5 text-purple-400" />
+              Logs de Auditoria & Segurança do Sistema
+            </h3>
+            <p className="text-xs text-slate-400">Rastreabilidade completa de ações administrativas, acessos e alterações de configuração.</p>
+          </div>
+
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 uppercase text-[10px] font-black">
+                <tr>
+                  <th className="p-4">Horário</th>
+                  <th className="p-4">Usuário</th>
+                  <th className="p-4">Ação</th>
+                  <th className="p-4">Detalhes</th>
+                  <th className="p-4">Endereço IP</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-mono">
+                {auditLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-900/50 transition">
+                    <td className="p-4 text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="p-4 font-bold text-white">{log.userName}</td>
+                    <td className="p-4 text-purple-400 font-bold">{log.action}</td>
+                    <td className="p-4 text-slate-300">{log.details}</td>
+                    <td className="p-4 text-slate-500">{log.ipAddress}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 11. SAÚDE DO SISTEMA & TELEMETRIA */}
+      {activeTab === 'health' && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-black text-white font-display flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-purple-400" />
+              Saúde do Sistema & Telemetria em Tempo Real
+            </h3>
+            <p className="text-xs text-slate-400">Monitoramento da infraestrutura cloud, serviços de API e status dos bancos de dados.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
+              <span className="text-xs font-bold text-slate-400">Banco de Dados PostgreSQL</span>
+              <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                🟢 OPERACIONAL (14ms)
+              </div>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
+              <span className="text-xs font-bold text-slate-400">Serviço de Autenticação JWT</span>
+              <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                🟢 OPERACIONAL (100%)
+              </div>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
+              <span className="text-xs font-bold text-slate-400">Armazenamento Cloud</span>
+              <div className="text-lg font-black text-emerald-400 flex items-center justify-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                🟢 OPERACIONAL (24 MB)
+              </div>
+            </div>
+
+            <div className="glass-panel p-5 rounded-2xl border border-slate-800 text-center space-y-2">
+              <span className="text-xs font-bold text-slate-400">Disponibilidade (Uptime)</span>
+              <div className="text-lg font-black text-purple-400 flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                99.98% SLA
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 12. FEATURE FLAGS & CHAVES DE FUNCIONALIDADE */}
+      {activeTab === 'feature_flags' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-black text-white font-display flex items-center gap-2">
+                <Flag className="w-5 h-5 text-purple-400" />
+                Feature Flags & Chaves de Controle
+              </h3>
+              <p className="text-xs text-slate-400">Habilite ou desabilite recursos experimentais e módulos globais em tempo real.</p>
+            </div>
+          </div>
+
+          {featureFlags.length === 0 ? (
+            <div className="glass-panel p-10 rounded-3xl border border-slate-800 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mx-auto">
+                <Flag className="w-7 h-7" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-white">Nenhuma Feature Flag Cadastrada</h4>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                  Todas as chaves de controle globais estão ativas no ambiente padrão.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {featureFlags.map((flag) => (
+                <div key={flag.id} className="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-black text-white font-display">{flag.name}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[9px] font-mono font-bold border border-purple-500/30">
+                        {flag.key}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">{flag.description}</p>
+                  </div>
+
+                  <button
+                    onClick={() => handleToggleFlag(flag.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition shrink-0 ${
+                      flag.isEnabledGlobally
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/50'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
+                    }`}
+                  >
+                    {flag.isEnabledGlobally ? '🟢 ATIVO GLOBALMENTE' : '⚪ DESATIVADO'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

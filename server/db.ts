@@ -186,6 +186,17 @@ class DatabaseManager {
         endDate: '2026-04-01T00:00:00.000Z',
         targetAudience: 'ALL',
         isActive: true,
+      },
+      {
+        id: 'anc_302',
+        title: '⚡ Sincronização em Tempo Real com o Google Drive',
+        message: 'Suas fotos organizadas na nuvem são importadas instantaneamente para a biblioteca de produtos.',
+        type: 'PROMOTION',
+        priority: 'HIGH',
+        startDate: '2026-03-02T00:00:00.000Z',
+        endDate: '2026-04-01T00:00:00.000Z',
+        targetAudience: 'ALL',
+        isActive: true,
       }
     ];
     initialAnnouncements.forEach(a => this.announcements.set(a.id, a));
@@ -207,21 +218,59 @@ class DatabaseManager {
         description: 'Modo vitrine digital 16:9 em tempo real para telas de loja.',
         isEnabledGlobally: true,
         allowedPlans: ['plan_pro', 'plan_premium'],
+      },
+      {
+        id: 'ff_ai_prompt',
+        key: 'ai_smart_prompt',
+        name: 'Gerador IA de Slogans e Promos Varejistas',
+        description: 'Criações automáticas de slogans atrativos para supermercados e feiras.',
+        isEnabledGlobally: true,
+        allowedPlans: ['plan_pro', 'plan_premium'],
+      },
+      {
+        id: 'ff_whatsapp_catalog',
+        key: 'whatsapp_catalog_direct',
+        name: 'Catálogo Web com Pedido Direto no WhatsApp',
+        description: 'Link público interativo para o consumidor final fazer pedidos.',
+        isEnabledGlobally: true,
+        allowedPlans: ['plan_free', 'plan_basic', 'plan_pro', 'plan_premium'],
       }
     ];
     initialFlags.forEach(f => this.featureFlags.set(f.id, f));
 
     // Seed Logs Auditoria
-    this.auditLogs.push({
-      id: 'log_401',
-      userId: 'user_superadmin',
-      userName: 'Carlos Mendes',
-      action: 'LOGIN',
-      entity: 'AUTH',
-      timestamp: new Date().toISOString(),
-      ipAddress: '189.120.45.12',
-      details: 'Super Admin efetuou login no Control Center',
-    });
+    this.auditLogs.push(
+      {
+        id: 'log_401',
+        userId: 'user_superadmin',
+        userName: 'Super Admin (To Yesterday Agência)',
+        action: 'LOGIN',
+        entity: 'AUTH',
+        timestamp: new Date().toISOString(),
+        ipAddress: '189.120.45.12',
+        details: 'Super Admin efetuou login no Control Center',
+      },
+      {
+        id: 'log_402',
+        userId: 'user_superadmin',
+        userName: 'Super Admin (To Yesterday Agência)',
+        action: 'FEATURE_FLAG_TOGGLE',
+        entity: 'FEATURE_FLAG',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        ipAddress: '189.120.45.12',
+        details: 'Habilitada a Feature Flag "Exportação em Lote de ZIP de Alta Resolução"',
+      },
+      {
+        id: 'log_403',
+        userId: 'user_admin_modelo',
+        userName: 'Roberto Silva',
+        action: 'CAMPAIGN_CREATE',
+        entity: 'CAMPAIGN',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        ipAddress: '177.92.14.88',
+        details: 'Criada nova campanha: Ofertas Imbatíveis do Final de Semana',
+      }
+    );
   }
 
   clearAllData(tenantId?: string) {
