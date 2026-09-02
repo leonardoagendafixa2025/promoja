@@ -177,36 +177,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
         </button>
       </div>
 
-      {/* Navegação por Módulos Operacionais */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-slate-800 scrollbar-none">
-        {[
-          { id: 'dashboard', label: 'Dashboard Executivo', icon: TrendingUp },
-          { id: 'tenants', label: `Tenants (${tenants.length})`, icon: Building2 },
-          { id: 'users', label: `Usuários (${users.length})`, icon: Users },
-          { id: 'plans', label: 'Planos & Assinaturas', icon: DollarSign },
-          { id: 'financial', label: 'Transações', icon: DollarSign },
-          { id: 'coupons', label: 'Cupons', icon: Tag },
-          { id: 'templates', label: 'Biblioteca Templates', icon: Layout },
-          { id: 'support', label: `Suporte (${tickets.length})`, icon: LifeBuoy },
-          { id: 'announcements', label: 'Avisos da Plataforma', icon: Bell },
-          { id: 'audit', label: 'Logs Auditoria', icon: Activity },
-          { id: 'health', label: 'Saúde do Sistema', icon: Cpu },
-          { id: 'feature_flags', label: 'Feature Flags', icon: Flag },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 whitespace-nowrap transition ${
-              activeTab === tab.id
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-950/50'
-                : 'bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
+
 
       {/* 1. DASHBOARD EXECUTIVO */}
       {activeTab === 'dashboard' && (
