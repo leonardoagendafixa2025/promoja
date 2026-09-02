@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -11,15 +11,10 @@ import {
   Layers, 
   ArrowUpRight,
   Tv,
-  CheckCircle2,
   TrendingUp,
-  Zap,
-  Database,
-  ExternalLink
+  Zap
 } from 'lucide-react';
 import { NavTab } from '../Layout/Sidebar';
-import { isSupabaseConfigured } from '../../lib/supabase';
-import { SupabaseConnectModal } from '../SuperAdmin/SupabaseConnectModal';
 
 interface DashboardViewProps {
   setActiveTab: (tab: NavTab) => void;
@@ -28,9 +23,6 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOpenCampaignWizard }) => {
   const { currentTenant } = useAuth();
-  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
-
-  const supabaseActive = isSupabaseConfigured();
 
   const metrics = [
     { title: 'Artes Geradas este Mês', value: '148', change: '+24% este mês', icon: Layers, color: 'from-rose-500 to-rose-600' },
@@ -61,48 +53,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOp
       variants={containerVariants}
       className="space-y-8 pb-12"
     >
-      {/* CARD DESTACADO DE BANCO DE DADOS SUPABASE */}
-      <motion.div 
-        variants={itemVariants}
-        className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition ${
-          supabaseActive
-            ? 'bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border-emerald-500/50'
-            : 'bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-950 border-amber-500/60'
-        }`}
-      >
-        <div className="flex items-center space-x-4">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shrink-0 shadow-lg ${
-            supabaseActive ? 'bg-emerald-600' : 'bg-amber-600'
-          }`}>
-            <Database className="w-6 h-6 text-white" />
-          </div>
-
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${supabaseActive ? 'bg-emerald-400 animate-ping' : 'bg-amber-400 animate-pulse'}`} />
-              <h3 className="text-sm font-black text-white font-display uppercase tracking-wider">
-                {supabaseActive ? 'Banco de Dados Supabase PostgreSQL Conectado' : '⚡ Conexão Supabase PostgreSQL'}
-              </h3>
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Projeto Ref: <strong className="text-emerald-400 font-mono">ajndysndfrnsgkkknguy</strong> • {supabaseActive ? 'Dados sincronizados na nuvem em tempo real.' : 'Insira sua chave API para ativar consultas em nuvem.'}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsSupabaseModalOpen(true)}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-2 shrink-0 transition ${
-            supabaseActive
-              ? 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40'
-              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-950/50'
-          }`}
-        >
-          <Database className="w-4 h-4" />
-          {supabaseActive ? 'Gerenciar Supabase' : 'CONFIGURAR SUPABASE AGORA'}
-        </button>
-      </motion.div>
-
       {/* Banner Principal Futurista / Neon Retail */}
       <motion.div 
         variants={itemVariants}
@@ -228,10 +178,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ setActiveTab, onOp
           </div>
         </div>
       </motion.div>
-
-      {isSupabaseModalOpen && (
-        <SupabaseConnectModal onClose={() => setIsSupabaseModalOpen(false)} />
-      )}
     </motion.div>
   );
 };
