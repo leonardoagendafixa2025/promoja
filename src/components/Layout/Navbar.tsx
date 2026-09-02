@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Store, UserCheck, Shield, Sparkles, KeyRound } from 'lucide-react';
+import { Store, UserCheck, Shield, Sparkles, KeyRound, Database } from 'lucide-react';
 import { LoginModal } from '../Auth/LoginModal';
+import { SupabaseConnectModal } from '../SuperAdmin/SupabaseConnectModal';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 export const Navbar: React.FC = () => {
-  const { currentTenant, currentUser, allTenants, allUsers, switchTenant, switchUser } = useAuth();
+  const { currentTenant, currentUser, allTenants, switchTenant, switchUser } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+
+  const supabaseActive = isSupabaseConfigured();
 
   return (
     <header className="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-30">
@@ -24,15 +29,30 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Multi-Tenant & User Selectors */}
+      {/* Multi-Tenant, Supabase & User Selectors */}
       <div className="flex items-center space-x-3">
+        {/* Botão do Supabase */}
+        <button
+          onClick={() => setIsSupabaseModalOpen(true)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+            supabaseActive
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'
+              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30'
+          }`}
+        >
+          <Database className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">
+            {supabaseActive ? 'Supabase Conectado' : 'Conectar Supabase'}
+          </span>
+        </button>
+
         {/* Botão de Login / Alternador de Perfil */}
         <button
           onClick={() => setIsLoginModalOpen(true)}
           className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white text-xs font-black shadow flex items-center gap-2 transition"
         >
           <KeyRound className="w-4 h-4 text-white" />
-          <span className="hidden sm:inline">Alternar Perfil de Login</span>
+          <span className="hidden sm:inline">Alternar Perfil</span>
         </button>
 
         {/* Selector de Empresa / Tenant */}
@@ -69,6 +89,10 @@ export const Navbar: React.FC = () => {
 
       {isLoginModalOpen && (
         <LoginModal onClose={() => setIsLoginModalOpen(false)} />
+      )}
+
+      {isSupabaseModalOpen && (
+        <SupabaseConnectModal onClose={() => setIsSupabaseModalOpen(false)} />
       )}
     </header>
   );
