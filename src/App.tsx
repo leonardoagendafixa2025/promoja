@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Layout/Navbar';
 import { Sidebar, NavTab, SuperAdminSubTab } from './components/Layout/Sidebar';
@@ -18,12 +18,25 @@ import { ShieldAlert, LogOut, Sparkles } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { currentUser, isLoading, isImpersonating, impersonatedTenant, impersonationReason, exitImpersonation } = useAuth();
-  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  
+  // Se for SUPER_ADMIN, a aba inicial é obrigatoriamente a tela de 'superadmin'
+  const [activeTab, setActiveTab] = useState<NavTab>(
+    currentUser?.role === 'SUPER_ADMIN' ? 'superadmin' : 'dashboard'
+  );
   const [superAdminSubTab, setSuperAdminSubTab] = useState<SuperAdminSubTab>('dashboard');
 
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | undefined>(undefined);
+
+  // Redirecionamento automático: Se o usuário logado for SUPER_ADMIN, entra direto na tela do Super Admin Control Center
+  useEffect(() => {
+    if (currentUser?.role === 'SUPER_ADMIN') {
+      setActiveTab('superadmin');
+    } else if (currentUser) {
+      setActiveTab('dashboard');
+    }
+  }, [currentUser?.id, currentUser?.role]);
 
   // 1. Rota pública de encartes/catálogo para consumidores do supermercado
   const pathname = window.location.pathname;
