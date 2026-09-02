@@ -348,76 +348,90 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({ subTab = 'dashbo
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        id: `tpl_${Date.now()}`,
+        ...newTemplateForm,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
+        elements: [
+          {
+            id: `el_${Date.now()}_1`,
+            type: 'ribbon_banner',
+            label: 'Banner Oferta',
+            posX: 140,
+            posY: 120,
+            width: 800,
+            height: 110,
+            bgColor: '#facc15',
+            fontColor: '#0f172a',
+            fontSize: 52,
+            content: 'SUPER OFERTA',
+            zIndex: 1,
+          },
+          {
+            id: `el_${Date.now()}_2`,
+            type: 'image',
+            label: 'Foto do Produto',
+            posX: 140,
+            posY: 320,
+            width: 800,
+            height: 800,
+            zIndex: 2,
+          },
+          {
+            id: `el_${Date.now()}_3`,
+            type: 'text',
+            label: 'Nome do Produto',
+            posX: 90,
+            posY: 1180,
+            width: 900,
+            height: 180,
+            dynamicField: '{{nome_produto}}',
+            fontSize: 64,
+            fontColor: '#ffffff',
+            fontStyle: 'black',
+            alignment: 'center',
+            zIndex: 3,
+          },
+          {
+            id: `el_${Date.now()}_4`,
+            type: 'price_promotional',
+            label: 'Preço Promocional',
+            posX: 210,
+            posY: 1490,
+            width: 660,
+            height: 145,
+            fontSize: 115,
+            fontColor: '#ffffff',
+            alignment: 'center',
+            zIndex: 5,
+          }
+        ]
+      };
+
       const res = await fetch('/api/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newTemplateForm,
-          thumbnailUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=300&auto=format&fit=crop&q=80',
-          elements: [
-            {
-              id: `el_${Date.now()}_1`,
-              type: 'ribbon_banner',
-              label: 'Banner Oferta',
-              posX: 140,
-              posY: 120,
-              width: 800,
-              height: 110,
-              bgColor: '#facc15',
-              fontColor: '#0f172a',
-              fontSize: 52,
-              content: 'SUPER OFERTA',
-              zIndex: 1,
-            },
-            {
-              id: `el_${Date.now()}_2`,
-              type: 'image',
-              label: 'Foto do Produto',
-              posX: 140,
-              posY: 320,
-              width: 800,
-              height: 800,
-              zIndex: 2,
-            },
-            {
-              id: `el_${Date.now()}_3`,
-              type: 'text',
-              label: 'Nome do Produto',
-              posX: 90,
-              posY: 1180,
-              width: 900,
-              height: 180,
-              dynamicField: '{{nome_produto}}',
-              fontSize: 64,
-              fontColor: '#ffffff',
-              fontStyle: 'black',
-              alignment: 'center',
-              zIndex: 3,
-            },
-            {
-              id: `el_${Date.now()}_4`,
-              type: 'price_promotional',
-              label: 'Preço Promocional',
-              posX: 210,
-              posY: 1490,
-              width: 660,
-              height: 145,
-              fontSize: 115,
-              fontColor: '#ffffff',
-              alignment: 'center',
-              zIndex: 5,
-            }
-          ]
-        })
-      });
+        body: JSON.stringify(payload)
+      }).catch(() => null);
 
-      if (res.ok) {
-        const created = await res.json();
-        setTemplates(prev => [...prev, created]);
-        setIsNewTemplateModalOpen(false);
+      let created = payload;
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data) created = data;
       }
-    } catch (err) {
-      alert('Erro ao criar template global');
+
+      setTemplates(prev => [...prev, created as any]);
+      setIsNewTemplateModalOpen(false);
+      setNewTemplateForm({
+        name: '',
+        category: 'SUPERMERCADO',
+        format: 'STORIES_9_16',
+        bgGradient: 'linear-gradient(180deg, #be123c 0%, #881337 100%)',
+        hasSpotlight: true,
+        isGlobal: true,
+      });
+    } catch (err: any) {
+      alert('Erro ao criar template global: ' + err.message);
     }
   };
 
