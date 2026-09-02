@@ -528,6 +528,10 @@ app.get('/api/plans', (req, res) => {
   res.json(db.getPlans());
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 API PROMOJÁ ativa com Control Center Super Admin e Isolamento Multi-Tenant em http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 API PROMOJÁ ativa com Control Center Super Admin e Isolamento Multi-Tenant em http://localhost:${PORT}`);
+  });
+}
+
+export default app;
