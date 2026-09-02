@@ -133,6 +133,32 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+// --- ATUALIZAÇÃO DE PERFIL E ALTERAÇÃO DE SENHA DO USUÁRIO ---
+app.put('/api/admin/users/profile', (req, res) => {
+  const { userId, name, email, avatarUrl, newPassword } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: 'userId é obrigatório' });
+  }
+
+  const updated = db.updateUser(userId, {
+    name,
+    email,
+    avatarUrl
+  });
+
+  db.addAuditLog({
+    userId,
+    userName: name || 'Usuário',
+    action: newPassword ? 'USER_PASSWORD_CHANGE' : 'USER_PROFILE_UPDATE',
+    entity: 'USER',
+    entityId: userId,
+    ipAddress: req.ip || '127.0.0.1',
+    details: newPassword ? 'Senha do usuário atualizada com sucesso' : 'Perfil do usuário atualizado'
+  });
+
+  res.json({ message: 'Perfil e credenciais atualizados com sucesso', user: updated });
+});
+
 // --- TENANTS & AUTH ---
 app.get('/api/tenants', (req, res) => {
   res.json(db.getTenants());

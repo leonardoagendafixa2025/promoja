@@ -260,6 +260,17 @@ class DatabaseManager {
     return fullUser;
   }
 
+  updateUser(id: string, updates: Partial<User>): User | undefined {
+    const existing = this.users.get(id);
+    if (!existing) return undefined;
+    const updated: User = {
+      ...existing,
+      ...updates
+    };
+    this.users.set(id, updated);
+    return updated;
+  }
+
   deleteUser(id: string): boolean {
     return this.users.delete(id);
   }

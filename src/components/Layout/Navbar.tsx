@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Store, UserCheck, Shield, Sparkles, LogOut, User, KeyRound, Globe } from 'lucide-react';
+import { Store, Shield, Sparkles, LogOut, User, KeyRound, Globe, Settings } from 'lucide-react';
 import { LoginModal } from '../Auth/LoginModal';
 
 interface NavbarProps {
   onOpenSuperAdmin?: () => void;
+  onOpenSettings?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
-  const { currentTenant, currentUser, allTenants, switchTenant, logout } = useAuth();
+export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin, onOpenSettings }) => {
+  const { currentTenant, currentUser, logout } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleLogout = () => {
@@ -46,7 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
           </button>
         )}
 
-        {/* INFORMAÇÕES DO USUÁRIO LOGADO */}
+        {/* INFORMAÇÕES DO USUÁRIO LOGADO & BOTÃO DE CONFIGURAÇÕES DA CONTA */}
         {currentUser ? (
           <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
             <User className="w-4 h-4 text-purple-400" />
@@ -54,10 +55,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSuperAdmin }) => {
               <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Usuário Logado</span>
               <span className="text-xs font-bold text-white truncate max-w-[150px]">{currentUser.name}</span>
             </div>
+
+            <button
+              onClick={onOpenSettings}
+              title="Configurações da Conta & Senha"
+              className="ml-1 p-1.5 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-purple-300 transition"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+
             <button
               onClick={handleLogout}
               title="Sair da Conta"
-              className="ml-1 p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"
+              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition"
             >
               <LogOut className="w-4 h-4" />
             </button>

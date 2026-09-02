@@ -17,6 +17,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, companyName: string, planId?: string) => Promise<boolean>;
   logout: () => void;
   updateBrandKitState: (brandKit: Partial<Tenant['brandKit']>) => void;
+  updateUserProfile?: (updates: Partial<User> & { newPassword?: string }) => Promise<void>;
   reloadTenants: () => Promise<void>;
   isLoading: boolean;
 }
@@ -311,6 +312,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = async (updates: Partial<User> & { newPassword?: string }) => {
+    if (!currentUser) return;
+    const updatedUser: User = {
+      ...currentUser,
+      name: updates.name || currentUser.name,
+      email: updates.email || currentUser.email,
+      avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : currentUser.avatarUrl,
+    };
+
+    setCurrentUser(updatedUser);
+    setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+
+    await fetch('/api/admin/users/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, ...updates })
+    }).catch(() => null);
+  };
+
   return (
     <AuthContext.Provider value={{
       currentTenant,
@@ -328,6 +348,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       register,
       logout,
       updateBrandKitState,
+      updateUserProfile,
       reloadTenants,
       isLoading,
     }}>

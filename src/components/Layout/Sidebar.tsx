@@ -19,7 +19,8 @@ import {
   Activity,
   Cpu,
   Flag,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -31,7 +32,8 @@ export type NavTab =
   | 'templates' 
   | 'flyer' 
   | 'tv' 
-  | 'superadmin';
+  | 'superadmin'
+  | 'settings';
 
 export type SuperAdminSubTab =
   | 'dashboard'
@@ -73,6 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'templates', label: 'Biblioteca & Artes', icon: LayoutTemplate },
     { id: 'flyer', label: 'Folheto Digital & PDF', icon: FileText },
     { id: 'tv', label: 'TV de Ofertas (16:9)', icon: Tv },
+    { id: 'settings', label: 'Configurações da Conta', icon: Settings },
   ];
 
   // MENU EXCLUSIVO DO SUPER ADMIN CONTROL CENTER

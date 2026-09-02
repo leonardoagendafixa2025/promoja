@@ -14,6 +14,7 @@ import { TVPlayerView } from './components/TV/TVPlayerView';
 import { PublicCatalogView } from './components/Public/PublicCatalogView';
 import { PublicHomeView } from './components/Public/PublicHomeView';
 import { SuperAdminView } from './components/SuperAdmin/SuperAdminView';
+import { UserSettingsView } from './components/Settings/UserSettingsView';
 import { ShieldAlert, LogOut, Sparkles } from 'lucide-react';
 
 const MainContent: React.FC = () => {
@@ -101,7 +102,10 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      <Navbar onOpenSuperAdmin={() => setActiveTab('superadmin')} />
+      <Navbar 
+        onOpenSuperAdmin={() => setActiveTab('superadmin')} 
+        onOpenSettings={() => setActiveTab('settings')}
+      />
 
       <div className="flex-1 flex overflow-hidden">
         <Sidebar 
@@ -138,6 +142,8 @@ const MainContent: React.FC = () => {
             {activeTab === 'tv' && <TVPlayerView />}
 
             {activeTab === 'superadmin' && <SuperAdminView subTab={superAdminSubTab} />}
+
+            {activeTab === 'settings' && <UserSettingsView />}
           </div>
         </main>
       </div>
