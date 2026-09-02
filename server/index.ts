@@ -230,6 +230,13 @@ app.post('/api/jobs/:id/progress', validateTenantAccess, (req, res) => {
   res.json(updated);
 });
 
+// --- ROTA DE LIMPEZA DE DADOS MOCKADOS PARA PRODUÇÃO REAL ---
+app.post('/api/admin/clean-database', (req, res) => {
+  const { tenantId } = req.body;
+  db.clearAllData(tenantId);
+  res.json({ message: 'Banco de dados de produtos e campanhas limpo com sucesso para produção real.' });
+});
+
 // --- PLANS ---
 app.get('/api/plans', (req, res) => {
   res.json(db.getPlans());

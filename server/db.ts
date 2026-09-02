@@ -24,6 +24,21 @@ class DatabaseManager {
     INITIAL_CAMPAIGNS.forEach(c => this.campaigns.set(c.id, c));
   }
 
+  clearAllData(tenantId?: string) {
+    if (tenantId) {
+      for (const [id, prod] of this.products.entries()) {
+        if (prod.tenantId === tenantId) this.products.delete(id);
+      }
+      for (const [id, camp] of this.campaigns.entries()) {
+        if (camp.tenantId === tenantId) this.campaigns.delete(id);
+      }
+    } else {
+      this.products.clear();
+      this.campaigns.clear();
+      this.renderJobs.clear();
+    }
+  }
+
   // --- TENANTS & BRAND KIT ---
   getTenants(): Tenant[] {
     return Array.from(this.tenants.values());
